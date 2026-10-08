@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>设备维护保养工单管理系统 v2.0</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/echarts@5/dist/echarts.min.js"></script>
+<style>
+:root{--primary:#1677bb;--primary-light:#4aa0dc;--primary-dark:#0f5f9c;--sidebar:#1677bb;--sidebar-logo:#0f5f9c;--sidebar-active:#4b93cd;--bg:#f0f2f5;--search-bg:#eef1f6;--tab-bg:#e8ebf0;--header:#f5f6f8;--row-hover:#f2f8fd;--border:#d9dde3;--border-sec:#e5e8ed;--text:#333;--text-sec:#666;--text-tri:#999;--text-dis:#c0c4cc;--disabled-bg:#f5f5f5;--danger:#e64545;--success:#52c41a;--warning:#fa8c16;--radius:4px;--h-input:36px;--shadow:0 2px 8px rgba(0,0,0,.08);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,"Helvetica Neue","PingFang SC","Microsoft YaHei",Arial,sans-serif;font-size:14px;color:var(--text);background:var(--bg);overflow:hidden;}
+[v-cloak]{display:none;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+/* Layout */
+.layout{display:flex;height:100vh;}
+.sidebar{width:240px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;box-shadow:2px 0 8px rgba(0,0,0,.1);}
+.sidebar-logo{height:64px;line-height:64px;background:var(--sidebar-logo);color:#fff;text-align:center;font-size:20px;font-style:italic;font-weight:700;letter-spacing:1px;}
+.sidebar-logo span{font-style:normal;font-weight:400;margin-left:6px;font-size:14px;opacity:.85;}
+.sidebar-search{padding:12px 16px;}
+.sidebar-search input{width:100%;height:36px;border-radius:18px;border:none;padding:0 14px;font-size:13px;outline:none;background:rgba(255,255,255,.15);color:#fff;}
+.sidebar-search input::placeholder{color:rgba(255,255,255,.5);}
+.sidebar-menu{flex:1;overflow-y:auto;padding-bottom:12px;}
+.menu-item{height:48px;line-height:48px;color:rgba(255,255,255,.8);cursor:pointer;display:flex;align-items:center;padding:0 20px;font-size:14px;transition:all .15s;}
+.menu-item:hover{background:rgba(255,255,255,.1);color:#fff;}
+.menu-item.active{background:var(--sidebar-active);color:#fff;font-weight:600;}
+.menu-item .icon{width:18px;height:18px;margin-right:10px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.menu-item .arrow{margin-left:auto;font-size:10px;transition:transform .2s;}
+.menu-item .arrow.open{transform:rotate(180deg);}
+.menu-lv2{padding-left:24px;background:rgba(0,0,0,.06);height:42px;line-height:42px;font-size:13px;}
+.menu-lv3{padding-left:48px;background:rgba(0,0,0,.1);height:38px;line-height:38px;font-size:13px;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+/* Header */
+.header{height:60px;background:#fff;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--border-sec);flex-shrink:0;}
+.header .breadcrumb{font-size:14px;color:var(--text-sec);}
+.header .breadcrumb b{color:var(--text);margin:0 6px;font-weight:500;}
+.header .right{margin-left:auto;display:flex;align-items:center;gap:16px;}
+.header .notif{position:relative;cursor:pointer;font-size:18px;color:var(--text-sec);}
+.header .notif .dot{position:absolute;top:-4px;right:-4px;width:8px;height:8px;background:var(--danger);border-radius:50%;}
+.header .user{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:20px;transition:background .15s;}
+.header .user:hover{background:#f5f5f5;}
+.header .user .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--primary-light),var(--primary-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;}
+.header .role-tag{font-size:11px;padding:2px 8px;border-radius:3px;background:#e6f7ff;color:var(--primary);}
+/* Tabs */
+.tabs-bar{background:var(--tab-bg);display:flex;align-items:flex-end;padding:0 16px;height:40px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;}
+.tab-item{padding:0 16px;height:34px;line-height:34px;font-size:13px;color:var(--text-sec);cursor:pointer;position:relative;top:6px;white-space:nowrap;display:flex;align-items:center;gap:6px;border-radius:4px 4px 0 0;transition:all .15s;}
+.tab-item:hover{color:var(--primary);background:rgba(74,160,220,.08);}
+.tab-item.active{background:#fff;color:var(--primary);font-weight:600;}
+.tab-item .close{font-size:14px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:var(--text-tri);}
+.tab-item .close:hover{background:#ddd;color:var(--text);}
+/* Content */
+.content{flex:1;overflow-y:auto;padding:20px;}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
+/* Cards & Stats */
+.stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+.stat-card{background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .2s;box-shadow:var(--shadow);}
+.stat-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12);transform:translateY(-2px);}
+.stat-card .label{font-size:13px;color:var(--text-tri);margin-bottom:10px;}
+.stat-card .value{font-size:32px;font-weight:700;line-height:1;}
+.stat-card .value.blue{color:var(--primary-light);}
+.stat-card .value.red{color:var(--danger);}
+.stat-card .value.green{color:var(--success);}
+.stat-card .value.orange{color:var(--warning);}
+.stat-card .compare{font-size:12px;color:var(--text-tri);margin-top:10px;}
+.stat-card .compare .up{color:var(--success);}
+.stat-card .compare .down{color:var(--danger);}
+/* Search */
+.search-area{background:#fff;padding:20px 20px 12px;border-radius:var(--radius);border:1px solid var(--border-sec);margin-bottom:16px;}
+.search-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 20px;}
+.field-row{display:flex;align-items:center;}
+.field-row label{width:90px;text-align:right;padding-right:10px;font-size:13px;color:var(--text-sec);white-space:nowrap;flex-shrink:0;}
+.field-row .control{flex:1;}
+.search-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:12px;}
+/* Form Controls */
+.inp{width:100%;height:var(--h-input);border:1px solid var(--border);border-radius:var(--radius);padding:0 10px;background:#fff;outline:none;font-size:14px;transition:border-color .15s;}
+.inp:focus{border-color:var(--primary-light);box-shadow:0 0 0 2px rgba(74,160,220,.15);}
+.inp-area{width:100%;border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;background:#fff;outline:none;font-size:14px;resize:vertical;min-height:80px;font-family:inherit;line-height:1.6;}
+.inp-area:focus{border-color:var(--primary-light);}
+.sel{width:100%;height:var(--h-input);border:1px solid var(--border);border-radius:var(--radius);padding:0 28px 0 10px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;outline:none;font-size:14px;cursor:pointer;}
+.sel:focus{border-color:var(--primary-light);}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:var(--h-input);padding:0 16px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;font-size:13px;letter-spacing:1px;transition:all .15s;white-space:nowrap;}
+.btn:hover{border-color:var(--primary-light);color:var(--primary-light);}
+.btn-primary{background:var(--primary-light);border-color:var(--primary-light);color:#fff;}
+.btn-primary:hover{background:var(--primary);border-color:var(--primary);color:#fff;}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff;}
+.btn-danger:hover{background:#c93c3c;border-color:#c93c3c;}
+.btn-success{background:var(--success);border-color:var(--success);color:#fff;}
+.btn:disabled{background:var(--disabled-bg);color:var(--text-dis);border-color:var(--border);cursor:not-allowed;}
+.btn-sm{height:28px;padding:0 10px;font-size:12px;}
+.btn-xs{height:22px;padding:0 8px;font-size:11px;}
+/* Action bar */
+.action-bar{background:#fff;padding:12px 16px;border:1px solid var(--border-sec);border-top:none;display:flex;align-items:center;gap:10px;border-radius:0 0 var(--radius) var(--radius);margin-bottom:16px;}
+/* Table */
+.table-wrap{background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+table.grid{width:100%;border-collapse:collapse;min-width:1100px;}
+table.grid th{background:var(--header);font-weight:600;font-size:13px;padding:12px 10px;text-align:left;border-bottom:1px solid var(--border-sec);white-space:nowrap;color:var(--text-sec);}
+table.grid td{padding:12px 10px;border-bottom:1px solid var(--border-sec);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;}
+table.grid tr:last-child td{border-bottom:none;}
+table.grid tr:hover td{background:var(--row-hover);}
+table.grid td a{color:var(--primary-light);cursor:pointer;}
+table.grid td a:hover{text-decoration:underline;}
+table.grid .ops a{color:var(--primary-light);cursor:pointer;padding:0 6px;border-right:1px solid #e5e8ed;}
+table.grid .ops a:last-child{border-right:none;}
+table.grid .ops a.gray{color:var(--text-sec);}
+table.grid .ops a.danger{color:var(--danger);}
+table.grid .checkbox-col{width:44px;text-align:center;}
+table.grid .checkbox-col input{width:16px;height:16px;accent-color:var(--primary);cursor:pointer;}
+table.grid .num{text-align:right;font-variant-numeric:tabular-nums;}
+table.grid .center{text-align:center;}
+/* Tags */
+.tag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:12px;line-height:1.4;}
+.tag-blue{background:#e6f7ff;color:#1677bb;}
+.tag-orange{background:#fff7e6;color:#fa8c16;}
+.tag-red{background:#fff1f0;color:#e64545;}
+.tag-green{background:#f6ffed;color:#52c41a;}
+.tag-gray{background:#f5f5f5;color:#999;}
+.tag-purple{background:#f9f0ff;color:#722ed1;}
+.tag-cyan{background:#e6fffb;color:#13c2c2;}
+/* Pagination */
+.pagination{display:flex;align-items:center;gap:6px;padding:14px 16px;font-size:13px;color:var(--text-sec);background:#fff;border:1px solid var(--border-sec);border-top:none;border-radius:0 0 var(--radius) var(--radius);}
+.pagination .total{margin-right:auto;}
+.pagination .page-btn{min-width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--radius);background:#fff;cursor:pointer;font-size:13px;transition:all .15s;}
+.pagination .page-btn:hover{border-color:var(--primary-light);color:var(--primary-light);}
+.pagination .page-btn.active{color:var(--primary-light);border-color:var(--primary-light);font-weight:600;}
+.pagination .page-btn:disabled{opacity:.4;cursor:not-allowed;}
+/* Charts */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;}
+.charts-row-3{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.chart-box{background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);padding:16px 20px;}
+.chart-box h4{font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text);}
+.chart{height:260px;width:100%;}
+/* Tables side by side */
+.tables-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.table-section{background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);overflow:hidden;}
+.table-section h4{font-size:15px;font-weight:600;padding:14px 20px;border-bottom:1px solid var(--border-sec);color:var(--text);}
+/* Drawer & Modal */
+.drawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;justify-content:flex-end;animation:fadeIn .2s;}
+.drawer{background:#fff;width:720px;max-width:90vw;height:100%;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,.15);animation:slideInRight .3s;}
+.drawer-header{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-sec);position:sticky;top:0;background:#fff;z-index:1;}
+.drawer-header h3{font-size:16px;font-weight:600;flex:1;}
+.drawer-body{padding:20px;}
+.drawer-footer{padding:14px 20px;border-top:1px solid var(--border-sec);display:flex;justify-content:flex-end;gap:10px;background:#fff;position:sticky;bottom:0;}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;animation:fadeIn .2s;}
+.modal{background:#fff;border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,.2);animation:scaleIn .2s;}
+.modal-header{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-sec);}
+.modal-header h3{font-size:16px;font-weight:600;flex:1;}
+.modal-body{padding:20px;max-height:70vh;overflow-y:auto;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border-sec);display:flex;justify-content:flex-end;gap:10px;}
+.modal.w-sm{width:480px;}.modal.w-md{width:680px;}.modal.w-lg{width:960px;}.modal.w-xl{width:1100px;}
+.close-btn{font-size:22px;cursor:pointer;color:var(--text-tri);width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:all .15s;line-height:1;}
+.close-btn:hover{background:#f0f0f0;color:var(--text);}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+@keyframes slideInRight{from{transform:translateX(100%);}to{transform:translateX(0);}}
+/* Form */
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 20px;}
+.form-grid.cols-3{grid-template-columns:repeat(3,1fr);}
+.form-field{display:flex;align-items:center;}
+.form-field.full{grid-column:1/-1;}
+.form-field label{width:90px;text-align:right;padding-right:10px;font-size:13px;white-space:nowrap;flex-shrink:0;color:var(--text-sec);}
+.form-field label .req{color:var(--danger);margin-right:2px;}
+.form-field .ctrl{flex:1;}
+.form-section{margin-bottom:24px;}
+.form-section-title{font-size:15px;font-weight:600;border-left:3px solid var(--primary-light);padding-left:10px;margin-bottom:16px;color:var(--text);}
+.readonly-field{background:var(--disabled-bg);height:34px;line-height:34px;padding:0 10px;border-radius:var(--radius);font-size:13px;border:1px solid var(--border);color:var(--text-sec);}
+.info-card{background:#fafbfc;border:1px solid var(--border-sec);border-radius:var(--radius);padding:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px 20px;}
+.info-card .item label{color:var(--text-tri);font-size:12px;display:block;margin-bottom:4px;}
+.info-card .item .val{font-size:15px;color:var(--primary);font-weight:600;}
+/* Login */
+.login-bg{position:fixed;inset:0;background:linear-gradient(135deg,#0f5f9c 0%,#1677bb 50%,#4aa0dc 100%);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-box{background:#fff;border-radius:12px;padding:44px 48px;width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:scaleIn .3s;}
+.login-box h2{text-align:center;color:var(--primary-dark);margin-bottom:6px;font-size:24px;}
+.login-box .sub{text-align:center;color:var(--text-tri);font-size:13px;margin-bottom:30px;}
+.login-box .form-field{margin-bottom:16px;}
+.login-box label{width:70px;}
+.login-btn{width:100%;height:42px;font-size:15px;margin-top:10px;border-radius:var(--radius);}
+.role-select{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px;}
+.role-opt{border:2px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;transition:all .2s;user-select:none;background:#fff;}
+.role-opt:hover{border-color:var(--primary-light);background:#f0f9ff;transform:translateY(-1px);}
+.role-opt.selected{border-color:var(--primary-light);background:#e6f7ff;box-shadow:0 0 0 3px rgba(74,160,220,.15);}
+.role-opt .name{font-weight:600;margin-bottom:4px;font-size:14px;}
+.role-opt .desc{font-size:12px;color:var(--text-tri);}
+.debug-msg{margin-top:14px;padding:10px;background:#f5f5f5;border-radius:var(--radius);font-size:12px;color:var(--text-sec);text-align:center;}
+/* Empty & Misc */
+.empty{padding:60px 0;text-align:center;color:var(--text-tri);}
+.empty-icon{font-size:48px;margin-bottom:12px;display:block;}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;font-size:11px;color:#fff;background:var(--danger);}
+.badge.blue{background:var(--primary-light);}
+.badge.green{background:var(--success);}
+.badge.orange{background:var(--.warning);}
+.badge.gray{background:#bbb;}
+/* State flow */
+.state-flow{display:flex;align-items:center;gap:6px;margin:16px 0;flex-wrap:wrap;}
+.state-node{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:500;border:1px solid;}
+.state-node.done{background:#f6ffed;border-color:#b7eb8f;color:#52c41a;}
+.state-node.current{background:#e6f7ff;border-color:#91d5ff;color:#1677bb;box-shadow:0 0 0 3px rgba(22,119,187,.1);}
+.state-node.pending{background:#f5f5f5;border-color:#d9d9d9;color:#999;}
+.state-node.rejected{background:#fff1f0;border-color:#ffa39e;color:#e64545;}
+.state-arrow{color:#ccc;font-size:14px;}
+/* Toast */
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:12px 20px;border-radius:var(--radius);color:#fff;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideInRight .3s;max-width:320px;}
+.toast.success{background:#52c41a;}
+.toast.error{background:#e64545;}
+.toast.warning{background:#fa8c16;}
+.toast.info{background:#1677bb;}
+/* Grab countdown */
+.grab-timer{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--danger);font-weight:600;}
+.grab-timer .icon{font-size:14px;}
+/* Two column layout */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+/* Permission */
+.perm-layout{display:grid;grid-template-columns:260px 1fr;gap:20px;}
+.role-list{background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);overflow:hidden;}
+.role-list-header{padding:14px 16px;background:var(--header);font-weight:600;border-bottom:1px solid var(--border-sec);}
+.role-list-item{padding:12px 16px;border-bottom:1px solid var(--border-sec);cursor:pointer;transition:background .15s;}
+.role-list-item:last-child{border-bottom:none;}
+.role-list-item:hover{background:#f5f9ff;}
+.role-list-item.active{background:#e6f7ff;}
+.role-list-item .rname{font-weight:500;font-size:14px;}
+.role-list-item .rcode{font-size:12px;color:var(--text-tri);margin-top:2px;}
+.perm-panel{background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);overflow:hidden;}
+.perm-panel-header{padding:14px 20px;background:var(--header);font-weight:600;border-bottom:1px solid var(--border-sec);display:flex;justify-content:space-between;align-items:center;}
+.perm-module{margin-bottom:20px;}
+.perm-module-title{font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-sec);font-size:14px;}
+.perm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.perm-item{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;padding:6px 8px;border-radius:4px;transition:background .15s;}
+.perm-item:hover{background:#f5f5f5;}
+.perm-item input{width:14px;height:14px;accent-color:var(--primary);}
+/* Collapse */
+.collapse-bar{height:28px;background:linear-gradient(to bottom,#e8ecf0,#dde2e8);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--text-tri);border-radius:0 0 var(--radius) var(--radius);user-select:none;transition:background .15s;}
+.collapse-bar:hover{background:linear-gradient(to bottom,#dfe4e8,#d4d9df);}
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+  <!-- Toast -->
+  <div class="toast-container">
+    <div v-for="t in toasts" :key="t.id" class="toast" :class="t.type">{{t.msg}}</div>
+  </div>
+
+  <!-- Login -->
+  <div class="login-bg" v-if="!loggedIn">
+    <div class="login-box">
+      <h2>设备维护保养工单管理系统</h2>
+      <div class="sub">Maintenance Work Order Management System v2.0</div>
+      <div style="font-size:13px;color:var(--text-tri);margin-bottom:12px;">请选择登录角色（演示用）：</div>
+      <div class="role-select">
+        <div class="role-opt" :class="{selected:loginRole==='reporter'}" @click="loginRole='reporter'">
+          <div class="name">提报人</div>
+          <div class="desc">扫码提报故障</div>
+        </div>
+        <div class="role-opt" :class="{selected:loginRole==='confirmer'}" @click="loginRole='confirmer'">
+          <div class="name">确认人</div>
+          <div class="desc">确认/驳回工单</div>
+        </div>
+        <div class="role-opt" :class="{selected:loginRole==='dispatcher'}" @click="loginRole='dispatcher'">
+          <div class="name">调度员</div>
+          <div class="desc">派工 / 协调</div>
+        </div>
+        <div class="role-opt" :class="{selected:loginRole==='repairman'}" @click="loginRole='repairman'">
+          <div class="name">维修工</div>
+          <div class="desc">接单 / 作业</div>
+        </div>
+        <div class="role-opt" :class="{selected:loginRole==='verifier'}" @click="loginRole='verifier'">
+          <div class="name">验收人</div>
+          <div class="desc">质量验收</div>
+        </div>
+        <div class="role-opt" :class="{selected:loginRole==='manager'}" @click="loginRole='manager'">
+          <div class="name">管理层</div>
+          <div class="desc">查看报表</div>
+        </div>
+        <div class="role-opt" :class="{selected:loginRole==='admin'}" @click="loginRole='admin'">
+          <div class="name">管理员</div>
+          <div class="desc">系统配置</div>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>用户名：</label>
+        <div class="ctrl"><input class="inp" v-model="loginName" placeholder="请输入用户名"></div>
+      </div>
+      <div class="form-field">
+        <label>密&nbsp;&nbsp;&nbsp;&nbsp;码：</label>
+        <div class="ctrl"><input class="inp" type="password" value="123456" readonly></div>
+      </div>
+      <button class="btn btn-primary login-btn" @click="doLogin">登&nbsp;&nbsp;录</button>
+      <div class="debug-msg">当前角色：<b style="color:var(--primary);">{{roleLabel}}</b> · 7种角色可切换体验不同权限</div>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="layout" v-if="loggedIn">
+    <aside class="sidebar">
+      <div class="sidebar-logo">AUMAN <span>工单系统</span></div>
+      <div class="sidebar-search"><input placeholder="搜索菜单" v-model="menuFilter"></div>
+      <nav class="sidebar-menu">
+        <template v-for="m in filteredMenus" :key="m.id">
+          <div class="menu-item" :class="{active:activeMenu===m.id}" @click="toggleMenu(m)">
+            <span class="icon">{{m.icon}}</span><span>{{m.name}}</span>
+            <span class="arrow" :class="{open:m.open}" v-if="m.children">{{m.open?'▼':'▶'}}</span>
+          </div>
+          <template v-if="m.open && m.children">
+            <div class="menu-item menu-lv2" v-for="c in m.children" :key="c.id" :class="{active:activeMenu===c.id}" @click.stop="goPage(c)">
+              <span class="icon">{{c.icon}}</span><span>{{c.name}}</span>
+            </div>
+          </template>
+        </template>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="header">
+        <span class="breadcrumb">首页<b>›</b>{{currentMenuName}}</span>
+        <div class="right">
+          <div class="notif" @click="showNotif=!showNotif">
+            🔔<span class="dot" v-if="unreadNotif>0"></span>
+          </div>
+          <div class="user" @click="loggedIn=false">
+            <div class="avatar">{{currentUser.realName.slice(0,1)}}</div>
+            <span>{{currentUser.realName}}</span>
+            <span class="role-tag">{{roleLabel}}</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="tabs-bar" v-if="openTabs.length">
+        <div class="tab-item" :class="{active:activeTab===t.id}" v-for="t in openTabs" :key="t.id" @click="activeTab=t.id">
+          {{t.name}}
+          <span class="close" v-if="openTabs.length>1" @click.stop="closeTab(t.id)">×</span>
+        </div>
+      </div>
+
+      <div class="content">
+        <!-- Dashboard -->
+        <div class="tab-pane" :class="{active:activeTab==='dashboard'}">
+          <div class="stat-cards">
+            <div class="stat-card" @click="goDrill('totalHours')">
+              <div class="label">本月总维修工时</div>
+              <div class="value blue">{{dash.totalHours}}<span style="font-size:14px;font-weight:400;color:var(--text-tri);"> h</span></div>
+              <div class="compare"><span class="up">↑</span> 较上月 +12.3% · 点击查看明细</div>
+            </div>
+            <div class="stat-card" @click="goDrill('todayNew')">
+              <div class="label">今日新增工单</div>
+              <div class="value">{{dash.todayOrders}}</div>
+              <div class="compare">周期性 {{dash.todayPeriodic}} / 临时 {{dash.todayTemp}} / 紧急 {{dash.todayEmergency}}</div>
+            </div>
+            <div class="stat-card" @click="goDrill('pending')">
+              <div class="label">待处理工单</div>
+              <div class="value red">{{dash.pending}}</div>
+              <div class="compare">待确认 {{dash.pdConfirm}} · 待派工 {{dash.pdDispatch}} · 待接单 {{dash.pdAccept}}</div>
+            </div>
+            <div class="stat-card" @click="goDrill('timely')">
+              <div class="label">本月及时率</div>
+              <div class="value blue">{{dash.timelyRate}}%</div>
+              <div class="compare"><span class="down">↓</span> 较上月 -2.1% · 点击查看明细</div>
+            </div>
+          </div>
+          <div class="charts-row">
+            <div class="chart-box">
+              <h4>近 30 天工单量与工时趋势 <a style="font-size:12px;color:var(--primary);cursor:pointer;margin-left:auto;" @click="goDrill('trend')">下钻 →</a></h4>
+              <div class="chart" ref="trendChart"></div>
+            </div>
+            <div class="chart-box">
+              <h4>分类型工时占比 <a style="font-size:12px;color:var(--primary);cursor:pointer;margin-left:auto;" @click="goDrill('type')">下钻 →</a></h4>
+              <div class="chart" ref="typeChart"></div>
+            </div>
+          </div>
+          <div class="charts-row-3">
+            <div class="chart-box">
+              <h4>分车间维修成本（万元） <a style="font-size:12px;color:var(--primary);cursor:pointer;margin-left:auto;" @click="goDrill('cost')">下钻 →</a></h4>
+              <div class="chart" ref="costChart"></div>
+            </div>
+            <div class="chart-box">
+              <h4>核心指标对比（本月 vs 上月） <a style="font-size:12px;color:var(--primary);cursor:pointer;margin-left:auto;" @click="goDrill('radar')">下钻 →</a></h4>
+              <div class="chart" ref="radarChart"></div>
+            </div>
+          </div>
+          <div class="tables-row">
+            <div class="table-section">
+              <h4>🔧 维修工工时排名（本月） <a style="font-size:12px;color:var(--primary);cursor:pointer;margin-left:auto;" @click="goDrill('rank')">下钻 →</a></h4>
+              <table class="grid"><thead><tr><th class="center" style="width:50px;">排名</th><th>姓名</th><th class="num">工时(h)</th><th class="num">合格率</th><th class="num">一次修复率</th><th class="num">效率系数</th></tr></thead>
+              <tbody><tr v-for="(r,i) in rankings" :key="i">
+                <td class="center" :style="{fontWeight:700,color:i<3?'var(--primary)':'inherit'}">{{i+1}}</td>
+                <td>{{r.name}} <span class="tag tag-blue" style="margin-left:4px;">L{{r.level}}</span></td>
+                <td class="num">{{r.hours}}</td><td class="num">{{r.quality}}%</td><td class="num">{{r.firstFix}}%</td>
+                <td class="num">{{r.efficiency}}</td>
+              </tr></tbody></table>
+            </div>
+            <div class="table-section">
+              <h4>🏭 设备故障 TOP10 <a style="font-size:12px;color:var(--primary);cursor:pointer;margin-left:auto;" @click="goDrill('equip')">下钻 →</a></h4>
+              <table class="grid"><thead><tr><th class="center" style="width:50px;">排名</th><th>设备名称</th><th class="num">故障次数</th><th class="num">MTTR(h)</th><th class="num">MTBF(h)</th></tr></thead>
+              <tbody><tr v-for="(e,i) in equipTop" :key="i">
+                <td class="center" :style="{fontWeight:700,color:i<3?'var(--danger)':'inherit'}">{{i+1}}</td>
+                <td>{{e.name}} <span class="tag" :class="e.count>5?'tag-orange':'tag-gray'">{{e.count>5?'高频':'正常'}}</span></td>
+                <td class="num">{{e.count}}次</td><td class="num">{{e.mttr}}</td><td class="num">{{e.mtbf}}</td>
+              </tr></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order List -->
+        <div class="tab-pane" :class="{active:activeTab==='order-list'}">
+          <div class="search-area">
+            <div class="search-grid">
+              <div class="field-row"><label>工单编号：</label><div class="control"><input class="inp" v-model="filters.orderNo" placeholder="请输入工单编号"></div></div>
+              <div class="field-row"><label>工单类型：</label><div class="control"><select class="sel" v-model="filters.type"><option value="">全部</option><option value="periodic">周期性维护</option><option value="temporary">临时任务</option><option value="emergency">紧急故障</option></select></div></div>
+              <div class="field-row"><label>工单状态：</label><div class="control"><select class="sel" v-model="filters.status"><option value="">全部</option><option value="pending_confirm">待确认</option><option value="pending_dispatch">待派工</option><option value="pending_accept">待接单</option><option value="working">作业中</option><option value="pending_acceptance">待验收</option><option value="closed">已关闭</option><option value="rejected">已驳回</option><option value="postponed">已延后</option><option value="reworking">返修中</option></select></div></div>
+              <div class="field-row"><label>所属车间：</label><div class="control"><select class="sel" v-model="filters.workshop"><option value="">全部</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+              <div class="field-row"><label>执行人：</label><div class="control"><input class="inp" v-model="filters.assignee" placeholder="请输入执行人"></div></div>
+              <div class="field-row"><label>时间段：</label><div class="control" style="display:flex;gap:6px;"><input class="inp" type="date" v-model="filters.dateStart" style="flex:1;"><span style="color:var(--text-tri);line-height:36px;">~</span><input class="inp" type="date" v-model="filters.dateEnd" style="flex:1;"></div></div>
+            </div>
+            <div class="search-actions">
+              <button class="btn btn-primary" @click="pageNum=1">查&nbsp;询</button>
+              <button class="btn" @click="resetFilters">重&nbsp;置</button>
+            </div>
+          </div>
+
+          <div class="action-bar">
+            <button class="btn btn-primary" @click="openCreate" v-if="canCreate">新&nbsp;增工单</button>
+            <button class="btn" @click="exportData">导&nbsp;出</button>
+            <button class="btn" @click="backfillOrder" v-if="loginRole==='dispatcher'||loginRole==='admin'">后补录入</button>
+            <span style="margin-left:auto;font-size:13px;color:var(--text-tri);">共 <b>{{filteredOrders.length}}</b> 条 · 待处理 {{pendingCount}} 条</span>
+          </div>
+
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="grid">
+              <thead><tr>
+                <th class="checkbox-col"><input type="checkbox" :checked="checkAll" @change="toggleCheckAll"></th>
+                <th style="width:170px;">工单编号</th><th style="width:100px;">类型</th>
+                <th style="width:130px;">设备名称</th><th>工单标题</th>
+                <th style="width:80px;">车间</th><th style="width:70px;">执行人</th>
+                <th style="width:90px;">状态</th>
+                <th v-if="!['repairman'].includes(loginRole)" style="width:100px;">创建时间</th>
+                <th v-if="['repairman'].includes(loginRole)" style="width:80px;">工时核算</th>
+                <th style="width:220px;">操作</th>
+              </tr></thead>
+              <tbody>
+                <tr v-for="o in pagedOrders" :key="o.id" :style="o.backfill&&o.backfillUrgent?'background:#fff1f0;':''">
+                  <td class="checkbox-col"><input type="checkbox" :checked="selectedOrders.includes(o.id)" @change="toggleOrder(o.id)"></td>
+                  <td><a @click="openDetail(o)">{{o.orderNo}}</a></td>
+                  <td><span class="tag" :class="typeColor(o.type)">{{typeLabel(o.type)}}</span></td>
+                  <td>{{o.equipment||'-'}}</td>
+                  <td>{{o.title}}</td>
+                  <td>{{o.workshop}}</td>
+                  <td>{{o.assignee||'-'}}</td>
+                  <td>
+                    <span class="tag" :class="statusColor(o.status)">{{statusLabel(o.status)}}</span>
+                    <span v-if="o.backfill" class="tag tag-red" style="margin-left:4px;">后补</span>
+                  </td>
+                  <td v-if="!['repairman'].includes(loginRole)">{{o.createdAt}}</td>
+                  <td v-if="['repairman'].includes(loginRole)">
+                    <span v-if="o.actualHours" style="color:var(--success);font-weight:600;">{{o.actualHours}}h</span>
+                    <span v-else style="color:var(--text-tri);">-</span>
+                  </td>
+                  <td class="ops">
+                    <a @click="openDetail(o)">详情</a>
+                    <a v-if="o.status==='pending_confirm'&&canConfirm" @click="openConfirm(o)">确认</a>
+                    <a v-if="o.status==='pending_confirm'&&canConfirm" class="danger" @click="rejectOrder(o)">驳回</a>
+                    <a v-if="o.status==='pending_dispatch'&&canDispatch" @click="openDispatch(o)">派工</a>
+                    <a v-if="o.status==='pending_accept'&&loginRole==='repairman'" @click="grabOrder(o)">抢单</a>
+                    <a v-if="o.status==='working'&&loginRole==='repairman'&&o.assignee===currentUser.realName" @click="submitWork(o)">提交验收</a>
+                    <a v-if="o.status==='pending_acceptance'&&canVerify" @click="openAcceptance(o)">验收</a>
+                    <a v-if="['pending_accept','working'].includes(o.status)" class="gray" @click="openPostpone(o)">延后</a>
+                    <a v-if="o.status==='working'&&o.assignee===currentUser.realName" class="gray" @click="returnOrder(o)">回退</a>
+                  </td>
+                </tr>
+                <tr v-if="!pagedOrders.length"><td colspan="12"><div class="empty"><span class="empty-icon">📭</div>暂无符合条件的数据</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination">
+            <span class="total">共 {{filteredOrders.length}} 条</span>
+            <button class="page-btn" :disabled="pageNum<=1" @click="pageNum--">‹</button>
+            <button class="page-btn" v-for="p in pageList" :key="p" :class="{active:p===pageNum}" @click="pageNum=p">{{p}}</button>
+            <button class="page-btn" :disabled="pageNum>=pageTotal" @click="pageNum++">›</button>
+            <select class="sel" v-model="pageSize" style="width:70px;height:30px;margin-left:8px;">
+              <option :value="5">5条/页</option>
+              <option :value="10">10条/页</option>
+              <option :value="20">20条/页</option>
+              <option :value="50">50条/页</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Equipment -->
+        <div class="tab-pane" :class="{active:activeTab==='equipment-list'}">
+          <div class="search-area">
+            <div class="search-grid">
+              <div class="field-row"><label>设备编码：</label><div class="control"><input class="inp" v-model="equipFilter.code" placeholder="请输入设备编码"></div></div>
+              <div class="field-row"><label>设备名称：</label><div class="control"><input class="inp" v-model="equipFilter.name" placeholder="请输入设备名称"></div></div>
+              <div class="field-row"><label>所属车间：</label><div class="control"><select class="sel" v-model="equipFilter.workshop"><option value="">全部</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+              <div class="field-row"><label>设备状态：</label><div class="control"><select class="sel" v-model="equipFilter.status"><option value="">全部</option><option value="running">运行中</option><option value="idle">空闲</option><option value="repairing">维修中</option><option value="scrapped">已报废</option></select></div></div>
+            </div>
+            <div class="search-actions"><button class="btn btn-primary" @click="searchEquip">查&nbsp;询</button><button class="btn" @click="resetEquipFilter">重&nbsp;置</button></div>
+          </div>
+          <div class="action-bar">
+            <button class="btn btn-primary" @click="openEquipModal()" v-if="canEditConfig">新&nbsp;增设备</button>
+            <button class="btn" @click="exportData" v-if="canEditConfig">导&nbsp;出</button>
+            <button class="btn" @click="printQRCode" v-if="canEditConfig">打印二维码</button>
+            <span style="margin-left:auto;font-size:13px;color:var(--text-tri);">共 <b>{{filteredEquipList.length}}</b> 台设备 · 维修中 {{repairingCount}} 台</span>
+          </div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="grid">
+              <thead><tr>
+                <th class="checkbox-col"><input type="checkbox"></th>
+                <th style="width:100px;">设备编码</th><th>设备名称</th><th style="width:130px;">设备型号</th>
+                <th style="width:90px;">车间</th><th style="width:110px;">安装位置</th>
+                <th style="width:80px;">状态</th><th class="num" style="width:70px;">故障次数</th>
+                <th class="num" style="width:80px;">电子围栏</th><th class="num" style="width:80px;">累计工时</th>
+                <th style="width:200px;">操作</th>
+              </tr></thead>
+              <tbody>
+                <tr v-for="e in filteredEquipList" :key="e.id">
+                  <td class="checkbox-col"><input type="checkbox"></td>
+                  <td><a @click="openEquipDetail(e)">{{e.code}}</a></td>
+                  <td><b>{{e.name}}</b></td>
+                  <td>{{e.model}}</td>
+                  <td>{{e.workshop}}</td>
+                  <td>{{e.location}}</td>
+                  <td><span class="tag" :class="equipStatusColor(e.status)">{{equipStatusLabel(e.status)}}</span></td>
+                  <td class="num" :style="{color:e.faultCount>5?'var(--danger)':'inherit',fontWeight:e.faultCount>5?600:400}">{{e.faultCount}}</td>
+                  <td class="num">{{e.fenceRadius}}m</td>
+                  <td class="num">{{e.runHours}}h</td>
+                  <td class="ops">
+                    <a @click="openEquipDetail(e)">详情</a>
+                    <a v-if="canEditConfig" @click="openEquipModal(e)">编辑</a>
+                    <a @click="scanQRCode(e)">扫码</a>
+                    <a v-if="canEditConfig" class="danger" @click="scrapEquip(e)">报废</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Knowledge Base -->
+        <div class="tab-pane" :class="{active:activeTab==='knowledge-search'}">
+          <div class="search-area" style="background:linear-gradient(135deg,#e6f7ff 0%,#f0f9ff 100%);border-color:#91d5ff;">
+            <div style="display:flex;gap:20px;align-items:flex-start;">
+              <div style="flex:1;">
+                <div class="field-row" style="margin-bottom:12px;">
+                  <label>查询内容：</label>
+                  <div class="control"><input class="inp" v-model="kbQuery" placeholder="支持自然语言查询，如：减速机轴承异响如何处理" style="height:44px;font-size:14px;"></div>
+                </div>
+                <div class="field-row" style="margin-bottom:12px;">
+                  <label>知识分类：</label>
+                  <div class="control"><select class="sel" v-model="kbCategory"><option value="">全部</option><option value="manual">维保手册</option><option value="case">故障案例</option><option value="guide">作业指导</option></select></div>
+                </div>
+                <div class="field-row">
+                  <label>设备型号：</label>
+                  <div class="control"><input class="inp" v-model="kbModel" placeholder="请输入设备型号（可选）"></div>
+                </div>
+              </div>
+              <div style="width:130px;">
+                <button class="btn btn-primary" style="height:44px;width:100%;font-size:14px;" @click="searchKB">🤖 AI 查 询</button>
+                <button class="btn" style="height:36px;width:100%;margin-top:8px;font-size:12px;" @click="kbQuery='';kbCategory='';kbModel='';kbResults=[]">重&nbsp;置</button>
+              </div>
+            </div>
+          </div>
+          <div class="action-bar">
+            <button class="btn btn-primary" @click="importDoc">导入文档</button>
+            <button class="btn" @click="addKnowledge">新增知识</button>
+            <button class="btn" @click="batchImport">批量导入</button>
+            <button class="btn" @click="exportData">导&nbsp;出</button>
+          </div>
+          <div v-if="kbResults.length" style="background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);">
+            <div style="padding:14px 20px;background:linear-gradient(90deg,#e6f7ff,#f0f9ff);border-bottom:1px solid var(--border-sec);font-size:13px;color:var(--text-sec);border-radius:var(--radius) var(--radius) 0 0;">
+              🤖 AI 为您找到 <b style="color:var(--primary);">{{kbResults.length}}</b> 条相关知识，已按相似度排序
+            </div>
+            <div v-for="(r,i) in kbResults" :key="i" style="padding:20px;border-bottom:1px solid var(--border-sec);transition:background .15s;" @mouseover="r._hover=true" @mouseout="r._hover=false" :style="r._hover?'background:#fafafa;':''">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                <span class="tag" :class="{manual:'tag-blue',case:'tag-orange',guide:'tag-green'}[r.category]">{{r.categoryLabel}}</span>
+                <a style="font-size:15px;font-weight:600;color:var(--text);">{{r.title}}</a>
+                <span style="margin-left:auto;font-size:12px;color:var(--text-tri);">相似度 <b style="color:var(--primary);font-size:14px;">{{r.score}}%</b></span>
+              </div>
+              <div style="font-size:13px;color:var(--text-sec);line-height:1.8;" v-html="r.highlight"></div>
+              <div style="margin-top:10px;font-size:12px;color:var(--text-tri);display:flex;gap:16px;">
+                <span>来源：{{r.source}}</span><span>{{r.date}}</span>
+                <a style="margin-left:auto;">查看详情 →</a>
+              </div>
+            </div>
+          </div>
+          <div v-else style="background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);">
+            <div class="empty" style="padding:80px 0;">
+              <div style="font-size:56px;margin-bottom:16px;">🤖</div>
+              <div style="font-size:16px;color:var(--text);margin-bottom:10px;font-weight:600;">AI 知识库综合查询</div>
+              <div style="font-size:13px;max-width:520px;margin:0 auto;line-height:1.8;color:var(--text-tri);">
+                输入故障现象或设备问题，系统将综合维保手册、历史维修记录、作业指导书，为您智能推荐处理方案。<br>
+                支持模糊匹配、关键词提取、相似度排序。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PM Template -->
+        <div class="tab-pane" :class="{active:activeTab==='order-pm'}">
+          <div class="search-area">
+            <div class="search-grid">
+              <div class="field-row"><label>设备名称：</label><div class="control"><input class="inp" placeholder="请输入设备名称"></div></div>
+              <div class="field-row"><label>维护周期：</label><div class="control"><select class="sel"><option value="">全部</option><option>月度</option><option>季度</option><option>半年度</option><option>年度</option></select></div></div>
+              <div class="field-row"><label>所属车间：</label><div class="control"><select class="sel"><option value="">全部</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+              <div class="field-row"><label>状态：</label><div class="control"><select class="sel"><option value="">全部</option><option>启用</option><option>停用</option></select></div></div>
+            </div>
+            <div class="search-actions"><button class="btn btn-primary">查&nbsp;询</button><button class="btn">重&nbsp;置</button></div>
+          </div>
+          <div class="action-bar">
+            <button class="btn btn-primary" @click="openPMModal()" v-if="canEditConfig">新增模板</button>
+            <button class="btn" @click="batchGeneratePM" v-if="canEditConfig">⚡ 批量生成工单</button>
+            <button class="btn" @click="exportData" v-if="canEditConfig">导&nbsp;出</button>
+            <span style="margin-left:auto;font-size:13px;color:var(--text-tri);">共 <b>{{pmTemplates.length}}</b> 个模板 · 本月将生成 {{pmTemplates.length}} 张工单</span>
+          </div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="grid">
+              <thead><tr>
+                <th>设备名称</th><th>维护项</th><th class="center">周期</th><th class="num">标准工时</th>
+                <th>指定责任人</th><th>技能要求</th><th>下次触发</th><th class="center">预警</th>
+                <th style="width:160px;">操作</th>
+              </tr></thead>
+              <tbody>
+                <tr v-for="t in pmTemplates" :key="t.id">
+                  <td><b>{{t.equipment}}</b></td>
+                  <td>{{t.itemName}}</td>
+                  <td class="center"><span class="tag" :class="{monthly:'tag-blue',quarterly:'tag-orange',semi_annual:'tag-purple',annual:'tag-red'}[t.cycle]">{{cycleLabel(t.cycle)}}</span></td>
+                  <td class="num">{{t.hours}}h</td>
+                  <td>{{t.assignee}} <span class="tag tag-blue" style="margin-left:4px;">L{{t.skill}}</span></td>
+                  <td><span class="tag" :class="t.skill>=3?'tag-blue':'tag-gray'">L{{t.skill}}</span></td>
+                  <td class="center">{{t.nextTrigger}}</td>
+                  <td class="center">
+                    <span v-if="t.nextTrigger<='2026-09-20'" class="tag tag-red">即将到期</span>
+                    <span v-else-if="t.nextTrigger<='2026-10-01'" class="tag tag-orange">3天内</span>
+                    <span v-else class="tag tag-green">正常</span>
+                  </td>
+                  <td class="ops">
+                    <a @click="openPMModal(t)" v-if="canEditConfig">编辑</a>
+                    <a @click="previewPM(t)" v-if="canDetail">预览</a>
+                    <a v-if="canEditConfig" @click="togglePM(t)">{{t.status==='active'?'停用':'启用'}}</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stats Personnel -->
+        <div class="tab-pane" :class="{active:activeTab==='stats-person'}">
+          <div class="search-area">
+            <div class="search-grid">
+              <div class="field-row"><label>统计周期：</label><div class="control"><select class="sel"><option>本月</option><option>上月</option><option>本季度</option><option>本年度</option></select></div></div>
+              <div class="field-row"><label>所属车间：</label><div class="control"><select class="sel"><option value="">全部</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+              <div class="field-row"><label>维修人员：</label><div class="control"><input class="inp" placeholder="请输入姓名"></div></div>
+            </div>
+            <div class="search-actions"><button class="btn btn-primary">查&nbsp;询</button><button class="btn">导出报表</button></div>
+          </div>
+          <div class="tables-row">
+            <div class="table-section">
+              <h4>📊 绩效评分排名</h4>
+              <table class="grid">
+                <thead><tr><th class="center" style="width:50px;">排名</th><th>姓名</th><th>技能等级</th><th class="num">总工时</th><th class="num">接单量</th><th class="num">合格率</th><th class="num">一次修复率</th><th class="num">效率系数</th><th class="center" style="width:70px;">评分</th></tr></thead>
+                <tbody>
+                  <tr v-for="(p,i) in performanceList" :key="i">
+                    <td class="center" :style="{fontWeight:700,color:i<3?'var(--primary)':'inherit'}">{{i+1}}</td>
+                    <td><b>{{p.name}}</b></td>
+                    <td><span class="tag" :class="p.level>=3?'tag-blue':p.level>=2?'tag-gray':'tag-green'">L{{p.level}} {{levelText(p.level)}}</span></td>
+                    <td class="num">{{p.hours}}h</td><td class="num">{{p.orders}}</td>
+                    <td class="num">{{p.quality}}%</td><td class="num">{{p.firstFix}}%</td>
+                    <td class="num">{{p.efficiency}}</td>
+                    <td class="center"><span :style="{fontWeight:700,color:p.grade==='A+'||p.grade==='A'?'var(--success)':p.grade==='B+'?'var(--primary)':'var(--warning)'}">{{p.grade}}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);">
+              <div style="padding:14px 20px;background:var(--header);font-weight:600;border-bottom:1px solid var(--border-sec);">💰 绩效工资试算</div>
+              <div style="padding:16px;">
+                <div v-for="p in performanceList.slice(0,3)" :key="p.id" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+                  <div>
+                    <b>{{p.name}}</b> <span class="tag tag-blue">L{{p.level}}</span>
+                    <span style="font-size:12px;color:var(--text-tri);margin-left:8px;">{{p.hours}}h × ¥{{p.rate}}/h × {{p.coefficient}}</span>
+                  </div>
+                  <div style="font-size:18px;font-weight:700;color:var(--primary);">¥{{(p.hours*p.rate*p.coefficient).toFixed(0)}}</div>
+                </div>
+                <div style="padding:12px;background:#fffbe6;border:1px solid #ffe58f;border-radius:4px;font-size:12px;color:#d46b08;margin-top:12px;">
+                  💡 绩效工资 = 实际工时 × 等级单价 × 绩效等级系数
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Config: Role -->
+        <div class="tab-pane" :class="{active:activeTab==='config-role'}" v-if="canEditConfig">
+          <div class="action-bar">
+            <button class="btn btn-primary" @click="openRoleModal()">新增角色</button>
+            <button class="btn" @click="exportData">导&nbsp;出</button>
+            <span style="margin-left:auto;font-size:13px;color:var(--text-tri);">共 <b>{{roles.length}}</b> 个角色</span>
+          </div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="grid">
+              <thead><tr><th class="center" style="width:50px;">序号</th><th>角色名称</th><th>角色编码</th><th>角色描述</th><th class="num">关联用户</th><th class="center">状态</th><th style="width:180px;">操作</th></tr></thead>
+              <tbody>
+                <tr v-for="(r,i) in roles" :key="r.id">
+                  <td class="center">{{i+1}}</td>
+                  <td><b>{{r.name}}</b></td>
+                  <td><code style="background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:12px;">{{r.code}}</code></td>
+                  <td>{{r.desc}}</td>
+                  <td class="num">{{r.userCount}}</td>
+                  <td class="center"><span class="tag" :class="r.status==='active'?'tag-green':'tag-gray'">{{r.status==='active'?'启用':'停用'}}</span></td>
+                  <td class="ops"><a @click="openRoleModal(r)">编辑</a><a @click="configSub='config-permission';currentRoleId=r.id">权限配置</a><a class="danger" @click="deleteRole(r)">删除</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Config: Permission -->
+        <div class="tab-pane" :class="{active:activeTab==='config-permission'}" v-if="canEditConfig">
+          <div class="perm-layout">
+            <div class="role-list">
+              <div class="role-list-header">选择角色</div>
+              <div v-for="r in roles" :key="r.id" class="role-list-item" :class="{active:currentRoleId===r.id}" @click="currentRoleId=r.id">
+                <div class="rname">{{r.name}}</div>
+                <div class="rcode">{{r.code}} · {{r.userCount}}人</div>
+              </div>
+            </div>
+            <div class="perm-panel">
+              <div class="perm-panel-header">
+                <span>权限配置 — {{currentRoleName}}</span>
+                <button class="btn btn-primary btn-sm" @click="savePermission">保&nbsp;存</button>
+              </div>
+              <div style="padding:20px;" v-if="currentRoleId">
+                <div v-for="mod in permissionModules" :key="mod.key" class="perm-module">
+                  <div class="perm-module-title">{{mod.name}}</div>
+                  <div class="perm-grid">
+                    <label v-for="p in mod.permissions" :key="p.key" class="perm-item">
+                      <input type="checkbox" :checked="hasPerm(mod.key,p.key)" @change="togglePermission(mod.key,p.key)">
+                      {{p.name}}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div v-else style="padding:60px 0;text-align:center;color:var(--text-tri);">请先选择左侧角色</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Config: User -->
+        <div class="tab-pane" :class="{active:activeTab==='config-user'}" v-if="canEditConfig">
+          <div class="search-area">
+            <div class="search-grid">
+              <div class="field-row"><label>用户姓名：</label><div class="control"><input class="inp" v-model="userFilter.name" placeholder="请输入姓名"></div></div>
+              <div class="field-row"><label>所属车间：</label><div class="control"><select class="sel" v-model="userFilter.workshop"><option value="">全部</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+              <div class="field-row"><label>所属角色：</label><div class="control"><select class="sel" v-model="userFilter.role"><option value="">全部</option><option v-for="r in roles" :key="r.id" :value="r.id">{{r.name}}</option></select></div></div>
+              <div class="field-row"><label>状态：</label><div class="control"><select class="sel" v-model="userFilter.status"><option value="">全部</option><option value="active">启用</option><option value="inactive">停用</option></select></div></div>
+            </div>
+            <div class="search-actions"><button class="btn btn-primary">查&nbsp;询</button><button class="btn" @click="resetUserFilter">重&nbsp;置</button></div>
+          </div>
+          <div class="action-bar">
+            <button class="btn btn-primary" @click="openUserModal()">新增用户</button>
+            <button class="btn" @click="batchImport">批量导入</button>
+            <button class="btn" @click="exportData">导&nbsp;出</button>
+          </div>
+          <div style="background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);">
+            <table class="grid">
+              <thead><tr><th>工号</th><th>姓名</th><th>手机号</th><th>车间</th><th>角色</th><th>技能等级</th><th>在岗</th><th style="width:180px;">操作</th></tr></thead>
+              <tbody>
+                <tr v-for="u in filteredUsers" :key="u.id">
+                  <td><code style="background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:12px;">{{u.code}}</code></td>
+                  <td><b>{{u.name}}</b></td><td>{{u.phone}}</td><td>{{u.workshop}}</td>
+                  <td><span class="tag tag-blue">{{u.roleName}}</span></td>
+                  <td><span class="tag" :class="u.skill>=3?'tag-blue':'tag-gray'">L{{u.skill}}</span></td>
+                  <td><span class="tag" :class="u.onDuty?'tag-green':'tag-gray'">{{u.onDuty?'在岗':'离岗'}}</span></td>
+                  <td class="ops"><a @click="openUserModal(u)">编辑</a><a>重置密码</a><a class="danger">停用</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Config: Workshop -->
+        <div class="tab-pane" :class="{active:activeTab==='config-workshop'}" v-if="canEditConfig">
+          <div class="action-bar">
+            <button class="btn btn-primary" @click="openWorkshopModal()">新增车间</button>
+            <button class="btn" @click="exportData">导&nbsp;出</button>
+            <span style="margin-left:auto;font-size:13px;color:var(--text-tri);">共 <b>{{workshops.length}}</b> 个车间</span>
+          </div>
+          <div style="background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);">
+            <table class="grid">
+              <thead><tr><th>编码</th><th>车间名称</th><th>确认人A角</th><th>确认人B角</th><th>调度员</th><th class="num">抢单超时</th><th class="num">后补时限</th><th style="width:160px;">操作</th></tr></thead>
+              <tbody>
+                <tr v-for="w in workshops" :key="w.id">
+                  <td><code style="background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:12px;">{{w.code}}</code></td>
+                  <td><b>{{w.name}}</b></td>
+                  <td>{{w.confirmerA}} <span class="tag tag-green">在线</span></td>
+                  <td>{{w.confirmerB}} <span class="tag tag-gray">待机</span></td>
+                  <td>{{w.dispatcher}}</td>
+                  <td class="num">{{w.grabTimeout}}分钟</td>
+                  <td class="num">{{w.postTimeout}}分钟</td>
+                  <td class="ops"><a @click="openWorkshopModal(w)">编辑</a><a>A/B角配置</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Config: Performance Rules -->
+        <div class="tab-pane" :class="{active:activeTab==='config-performance'}" v-if="canEditConfig">
+          <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;">
+            <div style="background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);">
+              <div style="padding:14px 20px;background:var(--header);font-weight:600;border-bottom:1px solid var(--border-sec);display:flex;justify-content:space-between;">
+                <span>绩效评分规则配置</span>
+                <button class="btn btn-primary btn-sm">保存规则</button>
+              </div>
+              <div style="padding:20px;">
+                <div class="form-section">
+                  <div class="form-section-title">评分维度权重</div>
+                  <div v-for="dim in perfDimensions" :key="dim.key" style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                    <span style="width:100px;text-align:right;font-size:13px;color:var(--text-sec);">{{dim.name}}</span>
+                    <input class="inp" type="number" v-model="dim.weight" style="width:80px;text-align:center;padding:0 4px;">
+                    <span style="color:var(--text-tri);font-size:12px;">%</span>
+                    <div style="flex:1;height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+                      <div :style="{width:dim.weight+'%',height:'100%',background:'var(--primary-light)',borderRadius:'4px',transition:'width .3s;'}"></div>
+                    </div>
+                  </div>
+                  <div style="padding:10px 14px;background:#fafafa;border-radius:var(--radius);font-size:12px;color:var(--text-tri);border:1px solid var(--border-sec);">
+                    权重合计：<b :style="{color:perfWeightSum===100?'var(--success)':'var(--danger)'}">{{perfWeightSum}}%</b>
+                    <span v-if="perfWeightSum!==100" style="color:var(--danger);margin-left:8px;">（必须为100%）</span>
+                  </div>
+                </div>
+                <div class="form-section">
+                  <div class="form-section-title">等级划分标准</div>
+                  <table class="grid" style="min-width:100%;">
+                    <thead><tr><th>等级</th><th>分数区间</th><th style="width:80px;">系数</th><th>说明</th><th style="width:80px;">操作</th></tr></thead>
+                    <tbody>
+                      <tr v-for="g in perfGrades" :key="g.grade">
+                        <td><span :style="{fontWeight:700,color:g.color}">{{g.grade}}</span></td>
+                        <td>{{g.min}} - {{g.max}}</td>
+                        <td>{{g.coefficient}}</td>
+                        <td>{{g.desc}}</td>
+                        <td class="ops"><a>编辑</a></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="form-section">
+                  <div class="form-section-title">技能等级与基础工资</div>
+                  <table class="grid" style="min-width:100%;">
+                    <thead><tr><th>等级</th><th style="width:120px;">工时单价</th><th>说明</th></tr></thead>
+                    <tbody>
+                      <tr><td><span class="tag tag-green">L1 初级</span></td><td style="font-weight:600;">¥ 50/h</td><td>入职 1 年内或转正前</td></tr>
+                      <tr><td><span class="tag tag-gray">L2 中级</span></td><td style="font-weight:600;">¥ 65/h</td><td>通过 L2 技能认证</td></tr>
+                      <tr><td><span class="tag tag-blue">L3 高级</span></td><td style="font-weight:600;">¥ 80/h</td><td>通过 L3 技能认证，可处理复杂故障</td></tr>
+                      <tr><td><span class="tag tag-orange">L4 专家</span></td><td style="font-weight:600;">¥ 100/h</td><td>通过 L4 技能认证，可指导他人</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid var(--border-sec);border-radius:var(--radius);height:fit-content;">
+              <div style="padding:14px 16px;background:var(--header);font-weight:600;border-bottom:1px solid var(--border-sec);">计算公式说明</div>
+              <div style="padding:16px;font-size:13px;line-height:1.8;color:var(--text-sec);">
+                <p style="margin-bottom:12px;"><strong style="color:var(--text);">绩效分数计算：</strong></p>
+                <div style="background:#f5f5f5;padding:10px;border-radius:6px;font-family:'Courier New',monospace;font-size:11px;margin-bottom:14px;line-height:1.6;">
+                  分数 = 工时得分 × {{perfDimensions[0].weight}}%<br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;+ 合格率 × {{perfDimensions[1].weight}}%<br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;+ 一次修复率 × {{perfDimensions[2].weight}}%<br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;+ 效率系数得分 × {{perfDimensions[3].weight}}%
+                </div>
+                <p style="margin-bottom:12px;"><strong style="color:var(--text);">绩效工资计算：</strong></p>
+                <div style="background:#f5f5f5;padding:10px;border-radius:6px;font-family:'Courier New',monospace;font-size:11px;margin-bottom:14px;line-height:1.6;">
+                  绩效工资 = 实际工时 × 等级单价<br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;× 绩效等级系数
+                </div>
+                <p style="margin-bottom:12px;"><strong style="color:var(--text);">效率系数：</strong></p>
+                <div style="background:#f5f5f5;padding:10px;border-radius:6px;font-size:12px;margin-bottom:14px;line-height:1.6;">
+                  效率系数 = 标准工时 / 实际工时<br>
+                  范围限制：0.5 ~ 1.2
+                </div>
+                <div style="background:#fffbe6;padding:10px;border-radius:6px;font-size:12px;color:#d46b08;border:1px solid #ffe58f;">
+                  💡 示例：李维修（L3，A+）本月 186h<br>
+                  绩效工资 = 186 × 80 × 1.2 = <b>¥17,856</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Drill-down -->
+        <div class="tab-pane" :class="{active:activeTab==='dashboard-drill'}">
+          <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+            <a @click="activeTab='dashboard'" style="color:var(--primary);cursor:pointer;font-size:13px;">← 返回仪表盘</a>
+            <span style="color:var(--text-tri);">|</span>
+            <span style="font-size:15px;font-weight:600;">{{drillTitle}}</span>
+            <span class="tag tag-blue">{{filteredDrillOrders.length}}条</span>
+          </div>
+          <div class="search-area" style="padding:14px 20px;">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <select class="sel" v-model="drillFilter.type" style="width:130px;"><option value="">全部类型</option><option value="periodic">周期性</option><option value="temporary">临时</option><option value="emergency">紧急</option></select>
+              <select class="sel" v-model="drillFilter.status" style="width:130px;"><option value="">全部状态</option><option v-for="(v,k) in statusMap" :key="k" :value="k">{{v}}</option></select>
+              <select class="sel" v-model="drillFilter.workshop" style="width:130px;"><option value="">全部车间</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select>
+              <button class="btn btn-primary btn-sm" @click="searchDrill">查&nbsp;询</button>
+              <button class="btn btn-sm" @click="exportData">导&nbsp;出</button>
+            </div>
+          </div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="grid">
+              <thead><tr><th style="width:170px;">工单编号</th><th style="width:90px;">类型</th><th>设备/标题</th><th style="width:80px;">车间</th><th style="width:70px;">执行人</th><th style="width:80px;">状态</th><th class="num">标准工时</th><th class="num">实际工时</th><th>创建时间</th></tr></thead>
+              <tbody>
+                <tr v-for="o in filteredDrillOrders" :key="o.id">
+                  <td><a @click="openDetail(o)">{{o.orderNo}}</a></td>
+                  <td><span class="tag" :class="typeColor(o.type)">{{typeLabel(o.type)}}</span></td>
+                  <td>{{o.equipment||'-'}} / {{o.title}}</td>
+                  <td>{{o.workshop}}</td><td>{{o.assignee||'-'}}</td>
+                  <td><span class="tag" :class="statusColor(o.status)">{{statusLabel(o.status)}}</span></td>
+                  <td class="num">{{o.plannedHours||'-'}}h</td>
+                  <td class="num" :style="{color:o.actualHours?'var(--success)':'inherit'}">{{o.actualHours?o.actualHours+'h':'-'}}</td>
+                  <td>{{o.createdAt}}</td>
+                </tr>
+                <tr v-if="!filteredDrillOrders.length"><td colspan="10"><div class="empty">暂无数据</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </main>
+  </div><!-- /layout -->
+
+  <!-- Equipment Detail Drawer -->
+  <div class="drawer-mask" v-if="equipDetail" @click.self="equipDetail=null">
+    <div class="drawer">
+      <div class="drawer-header"><h3>📱 设备详情 — {{equipDetail.code}}</h3><span class="close-btn" @click="equipDetail=null">×</span></div>
+      <div class="drawer-body">
+        <div class="form-section">
+          <div class="form-section-title">基本信息</div>
+          <div class="form-grid">
+            <div class="form-field"><label>设备编码：</label><div class="ctrl"><span class="readonly-field">{{equipDetail.code}}</span></div></div>
+            <div class="form-field"><label>设备名称：</label><div class="ctrl"><span class="readonly-field">{{equipDetail.name}}</span></div></div>
+            <div class="form-field"><label>设备型号：</label><div class="ctrl"><span class="readonly-field">{{equipDetail.model}}</span></div></div>
+            <div class="form-field"><label>所属车间：</label><div class="ctrl"><span class="readonly-field">{{equipDetail.workshop}}</span></div></div>
+            <div class="form-field"><label>安装位置：</label><div class="ctrl"><span class="readonly-field">{{equipDetail.location}}</span></div></div>
+            <div class="form-field"><label>设备状态：</label><div class="ctrl"><span class="readonly-field">{{equipStatusLabel(equipDetail.status)}}</span></div></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">📍 GPS 与电子围栏</div>
+          <div class="form-grid">
+            <div class="form-field"><label>经度：</label><div class="ctrl"><span class="readonly-field">{{equipDetail.lng}}</span></div></div>
+            <div class="form-field"><label>纬度：</label><div class="ctrl"><span class="readonly-field">{{equipDetail.lat}}</span></div></div>
+            <div class="form-field"><label>围栏半径：</label><div class="ctrl"><span class="readonly-field">{{equipDetail.fenceRadius}} 米</span></div></div>
+          </div>
+          <div style="margin-top:14px;background:linear-gradient(135deg,#e6fffb,#e6f7ff);border:1px solid #87e8de;border-radius:var(--radius);padding:14px;font-size:13px;color:var(--text-sec);">
+            📱 <strong>移动端校验规则：</strong>维修工扫码确认到场/闭环时，系统自动校验手机 GPS 是否在电子围栏范围内（半径 {{equipDetail.fenceRadius}} 米），超出范围将拒绝操作并提示"不在作业区域内"。
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">📊 运行数据</div>
+          <div class="info-card">
+            <div class="item"><label>累计运行时长</label><div class="val">{{equipDetail.runHours}}h</div></div>
+            <div class="item"><label>累计故障次数</label><div class="val">{{equipDetail.faultCount}}次</div></div>
+            <div class="item"><label>平均故障间隔 MTBF</label><div class="val">{{equipDetail.mtbf}}h</div></div>
+            <div class="item"><label>平均修复时间 MTTR</label><div class="val">{{equipDetail.mttr}}h</div></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">📋 近 6 个月维修记录</div>
+          <table class="grid" style="min-width:100%;"><thead><tr><th>时间</th><th>工单编号</th><th>故障描述</th><th>维修人</th><th class="num">耗时</th></tr></thead>
+          <tbody><tr v-for="(r,i) in equipDetail.records" :key=i><td>{{r.time}}</td><td>{{r.orderNo}}</td><td>{{r.desc}}</td><td>{{r.repairman}}</td><td class="num">{{r.hours}}h</td></tr></tbody></table>
+        </div>
+      </div>
+      <div class="drawer-footer"><button class="btn" @click="equipDetail=null">关&nbsp;闭</button></div>
+    </div>
+  </div>
+
+  <!-- Order Detail Drawer -->
+  <div class="drawer-mask" v-if="detailOrder" @click.self="detailOrder=null">
+    <div class="drawer">
+      <div class="drawer-header">
+        <h3>📋 工单详情 — {{detailOrder.orderNo}}</h3>
+        <span class="close-btn" @click="detailOrder=null">×</span>
+      </div>
+      <div class="drawer-body">
+        <!-- State Flow -->
+        <div class="form-section" style="background:#f9fafb;border:1px solid var(--border-sec);border-radius:var(--radius);padding:16px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px;">工单流转状态</div>
+          <div class="state-flow">
+            <span class="state-node" :class="stateClass('pending_confirm',detailOrder.status)">待确认</span>
+            <span class="state-arrow">→</span>
+            <span class="state-node" :class="stateClass('pending_dispatch',detailOrder.status)">待派工</span>
+            <span class="state-arrow">→</span>
+            <span class="state-node" :class="stateClass('pending_accept',detailOrder.status)">待接单</span>
+            <span class="state-arrow">→</span>
+            <span class="state-node" :class="stateClass('working',detailOrder.status)">作业中</span>
+            <span class="state-arrow">→</span>
+            <span class="state-node" :class="stateClass('pending_acceptance',detailOrder.status)">待验收</span>
+            <span class="state-arrow">→</span>
+            <span class="state-node" :class="stateClass('closed',detailOrder.status)">已关闭</span>
+          </div>
+          <div v-if="detailOrder.status==='rejected'" style="color:var(--danger);font-size:13px;margin-top:8px;">❌ 工单已驳回</div>
+          <div v-if="detailOrder.status==='postponed'" style="color:var(--warning);font-size:13px;margin-top:8px;">⏸ 工单已延后</div>
+          <div v-if="detailOrder.status==='reworking'" style="color:var(--danger);font-size:13px;margin-top:8px;">🔄 返修中</div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">基本信息</div>
+          <div class="form-grid">
+            <div class="form-field"><label>工单编号：</label><div class="ctrl"><span class="readonly-field">{{detailOrder.orderNo}}</span></div></div>
+            <div class="form-field"><label>工单类型：</label><div class="ctrl"><span class="readonly-field">{{typeLabel(detailOrder.type)}}</span></div></div>
+            <div class="form-field"><label>当前状态：</label><div class="ctrl"><span class="readonly-field">{{statusLabel(detailOrder.status)}}</span></div></div>
+            <div class="form-field"><label>所属车间：</label><div class="ctrl"><span class="readonly-field">{{detailOrder.workshop}}</span></div></div>
+            <div class="form-field"><label>创建时间：</label><div class="ctrl"><span class="readonly-field">{{detailOrder.createdAt}}</span></div></div>
+            <div class="form-field"><label>所需技能：</label><div class="ctrl"><span class="readonly-field">{{detailOrder.skillRequired||'不限'}}</span></div></div>
+            <div class="form-field"><label>执行人：</label><div class="ctrl"><span class="readonly-field">{{detailOrder.assignee||'未分配'}}</span></div></div>
+            <div class="form-field"><label>标准工时：</label><div class="ctrl"><span class="readonly-field">{{detailOrder.plannedHours||'-'}}h</span></div></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">设备与任务</div>
+          <div class="form-grid">
+            <div class="form-field"><label>设备名称：</label><div class="ctrl"><span class="readonly-field">{{detailOrder.equipment||'-'}}</span></div></div>
+            <div class="form-field"><label>故障等级：</label><div class="ctrl"><span class="readonly-field">{{urgencyLabel(detailOrder.urgency)}}</span></div></div>
+            <div class="form-field full"><label>工单标题：</label><div class="ctrl"><span class="readonly-field" style="width:100%;">{{detailOrder.title}}</span></div></div>
+          </div>
+          <div style="margin-top:14px;color:var(--text-sec);line-height:1.7;background:var(--disabled-bg);padding:12px 14px;border-radius:var(--radius);font-size:13px;">{{detailOrder.description}}</div>
+        </div>
+
+        <!-- Time Calculation -->
+        <div class="form-section" v-if="detailOrder.actualHours">
+          <div class="form-section-title">⏱ 工时核算</div>
+          <div class="info-card" style="grid-template-columns:repeat(3,1fr);">
+            <div class="item"><label>到场时间</label><div class="val" style="font-size:14px;">{{detailOrder.arriveTime||'-'}}</div></div>
+            <div class="item"><label>闭环时间</label><div class="val" style="font-size:14px;">{{detailOrder.closeTime||'-'}}</div></div>
+            <div class="item"><label>延后累计</label><div class="val" style="font-size:14px;color:var(--warning);">{{detailOrder.postponeHours||0}}h</div></div>
+            <div class="item"><label>实际工时</label><div class="val">{{detailOrder.actualHours}}h</div></div>
+            <div class="item"><label>效率系数</label><div class="val" :style="{color:efficiencyColor(detailOrder.efficiency)}">{{detailOrder.efficiency||'-'}}</div></div>
+            <div class="item"><label>核算公式</label><div class="val" style="font-size:11px;color:var(--text-tri);">闭环-到场-延后</div></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">📜 操作日志</div>
+          <table class="grid" style="min-width:100%;"><thead><tr><th>时间</th><th>操作</th><th>操作人</th><th>备注</th></tr></thead>
+          <tbody><tr v-for="(l,i) in detailOrder.logs" :key=i><td>{{l.time}}</td><td>{{l.action}}</td><td>{{l.operator}}</td><td>{{l.remark||'-'}}</td></tr></tbody></table>
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <button class="btn" @click="detailOrder=null">关&nbsp;闭</button>
+        <button class="btn btn-primary" v-if="detailOrder.status==='pending_confirm'&&canConfirm" @click="openConfirm(detailOrder)">去确认</button>
+        <button class="btn btn-primary" v-if="detailOrder.status==='pending_dispatch'&&canDispatch" @click="openDispatch(detailOrder)">去派工</button>
+        <button class="btn" v-if="detailOrder.status==='working'&&(loginRole==='dispatcher'||loginRole==='admin')" @click="openTransfer(detailOrder)">转副责任人</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Order Modal -->
+  <div class="modal-mask" v-if="createOrder" @click.self="createOrder=false">
+    <div class="modal w-lg">
+      <div class="modal-header"><h3>➕ 新增工单</h3><span class="close-btn" @click="createOrder=false">×</span></div>
+      <div class="modal-body">
+        <div class="form-grid cols-3">
+          <div class="form-field"><label><span class="req">*</span>工单类型：</label><div class="ctrl"><select class="sel" v-model="newOrder.type"><option value="periodic">周期性维护</option><option value="temporary">临时任务</option><option value="emergency">紧急故障</option></select></div></div>
+          <div class="form-field"><label><span class="req">*</span>所属车间：</label><div class="ctrl"><select class="sel" v-model="newOrder.workshop" @change="newOrder.equipmentId=''"><option value="">请选择车间</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+          <div class="form-field"><label><span class="req">*</span>故障等级：</label><div class="ctrl"><select class="sel" v-model="newOrder.urgency"><option value="urgent">紧急</option><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></div></div>
+          <div class="form-field"><label><span class="req">*</span>设备名称：</label><div class="ctrl"><select class="sel" v-model="newOrder.equipmentId" :disabled="!newOrder.workshop"><option value="">{{newOrder.workshop?'请选择设备':'请先选车间'}}</option><option v-for="e in equipLineByWorkshop(newOrder.workshop)" :key="e.id" :value="e.id">{{e.code}} — {{e.name}}</option></select></div></div>
+          <div class="form-field"><label>设备型号：</label><div class="ctrl"><span class="readonly-field">{{selectedEquip?.model||'-'}}</span></div></div>
+          <div class="form-field"><label>所需技能：</label><div class="ctrl"><select class="sel" v-model="newOrder.skill"><option value="">不限</option><option>L2 中级</option><option>L3 高级</option><option>L4 专家</option></select></div></div>
+          <div class="form-field"><label>标准工时：</label><div class="ctrl"><input class="inp" v-model="newOrder.hours" placeholder="小时"></div></div>
+          <div class="form-field"><label>执行人：</label><div class="ctrl"><select class="sel" v-model="newOrder.preAssignee"><option value="">暂不指定</option><option v-for="r in availableRepairmen" :key="r.id" :value="r.name">{{r.name}}（L{{r.skill}}·{{r.team}}）</option></select></div>
+          <div v-if="newOrder.skill&&!availableRepairmen.length" style="margin-top:6px;font-size:12px;color:var(--danger);">⚠️ 无满足技能要求的在岗维修工</div></div>
+          <div class="form-field full"><label><span class="req">*</span>工单标题：</label><div class="ctrl"><input class="inp" v-model="newOrder.title" placeholder="请输入工单标题"></div></div>
+        </div>
+        <div style="margin-top:16px;"><label><span class="req">*</span>任务描述：</label><textarea class="inp-area" v-model="newOrder.desc" placeholder="请详细描述故障现象或维护任务" style="margin-top:6px;"></textarea></div>
+        <div v-if="newOrder.type==='emergency'" style="margin-top:14px;padding:12px;background:#fff1f0;border:1px solid #ffa39e;border-radius:var(--radius);font-size:13px;color:var(--danger);">
+          ⚠️ 紧急工单将跳过待确认环节，直接进入待派工状态。如为抢修后补录，请在4小时内完成。
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="createOrder=false">取&nbsp;消</button><button class="btn btn-primary" @click="submitCreate">提&nbsp;交</button></div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-mask" v-if="confirmOrder" @click.self="confirmOrder=null">
+    <div class="modal w-md">
+      <div class="modal-header"><h3>✅ 确认工单 — {{confirmOrder.orderNo}}</h3><span class="close-btn" @click="confirmOrder=null">×</span></div>
+      <div class="modal-body">
+        <div style="margin-bottom:16px;padding:12px;border-radius:var(--radius);font-size:13px;" :style="orderConfirmerAOnline?'background:#f6ffed;border:1px solid #b7eb8f':'background:#fffbe6;border:1px solid #ffe58f'">
+          <b>确认人 A 角：</b>{{orderConfirmerA}} <span class="tag" :class="orderConfirmerAOnline?'tag-green':'tag-red'">{{orderConfirmerAOnline?'在岗':'不在场'}}</span><br>
+          <b>确认人 B 角：</b>{{orderConfirmerB}} <span class="tag" :class="orderConfirmerAOnline?'tag-gray':'tag-orange'">{{orderConfirmerAOnline?'待机':'已切换'}}</span>
+          <div v-if="!orderConfirmerAOnline" style="margin-top:8px;color:#d46b08;font-size:12px;">⚠️ A 角不在场，确认操作将记录为 B 角（{{orderConfirmerB}}）执行</div>
+        </div>
+        <div class="form-field" style="margin-bottom:12px;"><label>工单标题：</label><div class="ctrl"><span class="readonly-field" style="width:100%;">{{confirmOrder.title}}</span></div></div>
+        <div class="form-field" style="margin-bottom:12px;"><label>设备：</label><div class="ctrl"><span class="readonly-field">{{confirmOrder.equipment||'-'}}</span></div></div>
+        <div class="form-field" style="align-items:flex-start;"><label>确认意见：</label><div class="ctrl"><textarea class="inp-area" v-model="confirmRemark" placeholder="请输入确认意见（可选）" style="min-height:60px;"></textarea></div></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="confirmOrder=null">取&nbsp;消</button>
+        <button class="btn btn-primary" @click="submitConfirm(true)">✅ 确认通过</button>
+        <button class="btn btn-danger" @click="submitConfirm(false)">❌ 驳&nbsp;&nbsp;回</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dispatch Modal -->
+  <div class="modal-mask" v-if="dispatchOrder" @click.self="dispatchOrder=null">
+    <div class="modal w-md">
+      <div class="modal-header"><h3>🚀 工单派工 — {{dispatchOrder.orderNo}}</h3><span class="close-btn" @click="dispatchOrder=null">×</span></div>
+      <div class="modal-body">
+        <div class="form-section">
+          <div class="form-section-title">派工方式</div>
+          <div class="form-field" style="margin-bottom:14px;"><label>派工模式：</label><div class="ctrl"><select class="sel" v-model="dispatchMode"><option value="direct">直接派发</option><option value="grab">抢单模式</option><option value="force">强制派单</option></select></div></div>
+          <div class="form-field" v-if="dispatchMode!=='grab'"><label>指定执行人：</label><div class="ctrl"><select class="sel" v-model="dispatchAssignee"><option value="">请选择</option><option v-for="r in eligibleRepairmen" :key="r.id" :value="r.name">{{r.name}}（L{{r.skill}}·{{r.team}}）{{r.onDuty?'':' [离岗]'}}</option></select></div>
+          <div v-if="!eligibleRepairmen.length" style="margin-top:6px;font-size:12px;color:var(--danger);">⚠️ 当前无满足技能要求的在岗维修工</div>
+          <div v-else-if="dispatchOrder.skillRequired" style="margin-top:6px;font-size:12px;color:var(--text-tri);">工单要求：{{dispatchOrder.skillRequired}}，可选{{eligibleRepairmen.length}}人</div></div>
+          <div v-if="dispatchMode==='grab'" style="padding:12px;background:#e6f7ff;border:1px solid #91d5ff;border-radius:var(--radius);font-size:13px;color:var(--text-sec);">
+            ⏱ 抢单模式：推送至全厂维修工，<b>{{grabTimeout}}分钟</b>未抢将自动流转至区域班组，<b>{{grabTimeout*2}}分钟</b>仍无接单则由调度员强制派单。
+            <div v-if="grabCountdown>0" style="margin-top:8px;font-size:14px;font-weight:600;color:var(--primary);">剩余时间：{{formatCountdown(grabCountdown)}}</div>
+            <div v-if="grabStatus==='team'" style="margin-top:8px;color:var(--warning);font-weight:500;">⚠️ 已超时，自动流转至区域班组</div>
+            <div v-if="grabStatus==='forced'" style="margin-top:8px;color:var(--danger);font-weight:500;">🚨 已强制派单</div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">通知提醒</div>
+          <label class="perm-item"><input type="checkbox" checked> 发送手机强提醒铃声</label>
+          <label class="perm-item"><input type="checkbox" checked> 推送 APP 通知</label>
+          <label class="perm-item"><input type="checkbox"> 发送短信提醒</label>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="dispatchOrder=null">取&nbsp;消</button><button class="btn btn-primary" @click="submitDispatch">确认派工</button></div>
+    </div>
+  </div>
+
+  <!-- Transfer to Backup Modal -->
+  <div class="modal-mask" v-if="transferOrder" @click.self="transferOrder=null">
+    <div class="modal w-sm">
+      <div class="modal-header"><h3>转副责任人</h3><span class="close-btn" @click="transferOrder=null">×</span></div>
+      <div class="modal-body">
+        <div class="form-field" style="margin-bottom:14px;"><label>工单编号：</label><div class="ctrl"><span class="readonly-field">{{transferOrder.orderNo}}</span></div></div>
+        <div class="form-field" style="margin-bottom:14px;"><label>当前执行人：</label><div class="ctrl"><span class="readonly-field">{{transferOrder.assignee||'未分配'}}</span></div></div>
+        <div class="form-field" style="margin-bottom:14px;"><label>转副原因：</label><div class="ctrl"><select class="sel" v-model="transferReason"><option value="">请选择</option><option value="A角休假">A角休假</option><option value="A角不在场">A角不在场</option><option value="技能不匹配">技能不匹配</option><option value="工作负荷过高">工作负荷过高</option><option value="其他原因">其他原因</option></select></div></div>
+        <div class="form-field" style="align-items:flex-start;"><label>备注说明：</label><div class="ctrl"><textarea class="inp-area" v-model="transferRemark" placeholder="请填写转副备注说明"></textarea></div></div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="transferOrder=null">取&nbsp;消</button><button class="btn btn-primary" @click="submitTransfer">确认转副</button></div>
+    </div>
+  </div>
+
+  <!-- Backfill Order Modal -->
+  <div class="modal-mask" v-if="backfillModal" @click.self="backfillModal=false">
+    <div class="modal w-md">
+      <div class="modal-header"><h3>后补录入工单</h3><span class="close-btn" @click="backfillModal=false">×</span></div>
+      <div class="modal-body">
+        <div style="margin-bottom:16px;padding:12px;background:#fffbe6;border:1px solid #ffe58f;border-radius:var(--radius);font-size:13px;color:#d46b08;">
+          ⚠️ 后补工单需在故障发生 <b>4 小时</b>内完成录入，超时将被标记考核。
+        </div>
+        <div class="form-grid cols-3">
+          <div class="form-field"><label><span class="req">*</span>工单类型：</label><div class="ctrl"><select class="sel" v-model="backfillForm.type"><option value="emergency">紧急故障</option><option value="temporary">临时任务</option><option value="periodic">周期性维护</option></select></div></div>
+          <div class="form-field"><label><span class="req">*</span>所属车间：</label><div class="ctrl"><select class="sel" v-model="backfillForm.workshop"><option value="">请选择</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+          <div class="form-field"><label><span class="req">*</span>设备名称：</label><div class="ctrl"><select class="sel" v-model="backfillForm.equipmentId" :disabled="!backfillForm.workshop"><option value="">{{backfillForm.workshop?'请选择设备':'请先选车间'}}</option><option v-for="e in equipLineByWorkshop(backfillForm.workshop)" :key="e.id" :value="e.id">{{e.code}} — {{e.name}}</option></select></div></div>
+          <div class="form-field"><label><span class="req">*</span>故障发生时间：</label><div class="ctrl"><input class="inp" type="datetime-local" v-model="backfillForm.faultTime"></div></div>
+          <div class="form-field"><label><span class="req">*</span>故障等级：</label><div class="ctrl"><select class="sel" v-model="backfillForm.urgency"><option value="urgent">紧急</option><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></div></div>
+          <div class="form-field"><label>所需技能：</label><div class="ctrl"><select class="sel" v-model="backfillForm.skill"><option value="">不限</option><option>L2 中级</option><option>L3 高级</option><option>L4 专家</option></select></div></div>
+          <div class="form-field full"><label><span class="req">*</span>工单标题：</label><div class="ctrl"><input class="inp" v-model="backfillForm.title" placeholder="请输入工单标题"></div></div>
+        </div>
+        <div style="margin-top:14px;"><label><span class="req">*</span>后补原因：</label><textarea class="inp-area" v-model="backfillForm.reason" placeholder="请填写后补原因（如：紧急抢修后补录）" style="margin-top:6px;"></textarea></div>
+        <div v-if="backfillTimeError" style="margin-top:10px;padding:10px;background:#fff1f0;border:1px solid #ffa39e;border-radius:var(--radius);font-size:13px;color:var(--danger);">
+          ❌ {{backfillTimeError}}
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="backfillModal=false">取&nbsp;消</button><button class="btn btn-primary" @click="submitBackfill">提交后补</button></div>
+    </div>
+  </div>
+
+  <!-- Postpone Modal -->
+  <div class="modal-mask" v-if="postponeOrder" @click.self="postponeOrder=null">
+    <div class="modal w-sm">
+      <div class="modal-header"><h3>⏸ 工单延后申请</h3><span class="close-btn" @click="postponeOrder=null">×</span></div>
+      <div class="modal-body">
+        <div class="form-field" style="margin-bottom:16px;"><label>工单编号：</label><div class="ctrl"><span class="readonly-field">{{postponeOrder.orderNo}}</span></div></div>
+        <div class="form-field" style="margin-bottom:16px;"><label>延期至：</label><div class="ctrl"><input class="inp" v-model="postponeTarget" type="datetime-local"></div></div>
+        <div class="form-field" style="align-items:flex-start;"><label><span class="req">*</span>延后理由：</label><div class="ctrl"><textarea class="inp-area" v-model="postponeReason" placeholder="请填写明确的延后理由（至少10字）"></textarea></div></div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="postponeOrder=null">取&nbsp;消</button><button class="btn btn-primary" @click="submitPostpone">提交申请</button></div>
+    </div>
+  </div>
+
+  <!-- Acceptance Modal -->
+  <div class="modal-mask" v-if="acceptanceOrder" @click.self="acceptanceOrder=null">
+    <div class="modal w-md">
+      <div class="modal-header"><h3>🔍 工单验收 — {{acceptanceOrder.orderNo}}</h3><span class="close-btn" @click="acceptanceOrder=null">×</span></div>
+      <div class="modal-body">
+        <div class="info-card" style="margin-bottom:20px;">
+          <div class="item"><label>工单标题</label><div class="val" style="font-size:14px;">{{acceptanceOrder.title}}</div></div>
+          <div class="item"><label>执行人</label><div class="val" style="font-size:14px;">{{acceptanceOrder.assignee}}</div></div>
+          <div class="item"><label>标准工时</label><div class="val">{{acceptanceOrder.plannedHours||'-'}}h</div></div>
+          <div class="item"><label>实际工时</label><div class="val">{{acceptanceOrder.actualHours}}h</div></div>
+        </div>
+        <div class="form-field" style="margin-bottom:16px;"><label>验收结果：</label><div class="ctrl" style="display:flex;gap:24px;">
+          <label class="perm-item"><input type="radio" v-model="acceptResult" value="pass"> <span style="color:var(--success);font-weight:600;">合 格</span></label>
+          <label class="perm-item"><input type="radio" v-model="acceptResult" value="fail"> <span style="color:var(--danger);font-weight:600;">不 合 格</span></label>
+        </div></div>
+        <div class="form-field" style="align-items:flex-start;"><label>验收备注：</label><div class="ctrl"><textarea class="inp-area" v-model="acceptRemark" placeholder="请输入验收备注"></textarea></div></div>
+        <div v-if="acceptResult==='fail'" style="margin-top:12px;padding:12px;background:#fff1f0;border:1px solid #ffa39e;border-radius:var(--radius);font-size:13px;color:var(--danger);">
+          ⚠️ 验收不合格将回退至"返修中"状态，需重新作业后再次提交验收。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="acceptanceOrder=null">取&nbsp;消</button>
+        <button v-if="acceptResult==='pass'" class="btn btn-success" @click="submitAcceptance">✅ 确认验收通过</button>
+        <button v-else class="btn btn-danger" @click="submitAcceptance">❌ 验收不通过，回退返修</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PM Modal -->
+  <div class="modal-mask" v-if="pmModal" @click.self="pmModal=false">
+    <div class="modal w-md">
+      <div class="modal-header"><h3>{{pmForm.id?'编辑':'新增'}}周期维护模板</h3><span class="close-btn" @click="pmModal=false">×</span></div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field"><label>设备名称：</label><div class="ctrl"><select class="sel" v-model="pmForm.equipmentId"><option value="">请选择</option><option v-for="e in equipList" :key="e.id" :value="e.id">{{e.name}}</option></select></div></div>
+          <div class="form-field"><label>维护周期：</label><div class="ctrl"><select class="sel" v-model="pmForm.cycle"><option value="monthly">月度</option><option value="quarterly">季度</option><option value="semi_annual">半年度</option><option value="annual">年度</option></select></div></div>
+          <div class="form-field"><label>标准工时：</label><div class="ctrl"><input class="inp" v-model="pmForm.hours" placeholder="小时"></div></div>
+          <div class="form-field"><label>技能要求：</label><div class="ctrl"><select class="sel" v-model="pmForm.skill"><option value="1">L1</option><option value="2">L2</option><option value="3">L3</option><option value="4">L4</option></select></div></div>
+          <div class="form-field"><label>指定责任人：</label><div class="ctrl"><select class="sel" v-model="pmForm.assignee"><option value="">请选择</option><option v-for="r in repairmen" :key="r.id" :value="r.name">{{r.name}}</option></select></div></div>
+          <div class="form-field"><label>预警天数：</label><div class="ctrl"><input class="inp" v-model="pmForm.remindDays" placeholder="提前几天预警"></div></div>
+          <div class="form-field full"><label>维护项目：</label><div class="ctrl"><input class="inp" v-model="pmForm.itemName" placeholder="如：润滑系统检查"></div></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="pmModal=false">取&nbsp;消</button><button class="btn btn-primary" @click="submitPM">保&nbsp;存</button></div>
+    </div>
+  </div>
+
+  <!-- Equipment Modal -->
+  <div class="modal-mask" v-if="equipModal" @click.self="equipModal=false">
+    <div class="modal w-md">
+      <div class="modal-header"><h3>{{equipForm.id?'编辑':'新增'}}设备</h3><span class="close-btn" @click="equipModal=false">×</span></div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field"><label>设备编码：</label><div class="ctrl"><input class="inp" v-model="equipForm.code" placeholder="如：EQ-001"></div></div>
+          <div class="form-field"><label>设备名称：</label><div class="ctrl"><input class="inp" v-model="equipForm.name" placeholder="请输入设备名称"></div></div>
+          <div class="form-field"><label>设备型号：</label><div class="ctrl"><input class="inp" v-model="equipForm.model" placeholder="请输入型号"></div></div>
+          <div class="form-field"><label>所属车间：</label><div class="ctrl"><select class="sel" v-model="equipForm.workshop"><option value="">请选择</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+          <div class="form-field"><label>安装位置：</label><div class="ctrl"><input class="inp" v-model="equipForm.location" placeholder="如：A 区 3 号线"></div></div>
+          <div class="form-field"><label>电子围栏半径：</label><div class="ctrl"><input class="inp" v-model="equipForm.fenceRadius" placeholder="米（默认50）"></div></div>
+          <div class="form-field"><label>GPS 经度：</label><div class="ctrl"><input class="inp" v-model="equipForm.lng" placeholder="如：116.3974"></div></div>
+          <div class="form-field"><label>GPS 纬度：</label><div class="ctrl"><input class="inp" v-model="equipForm.lat" placeholder="如：39.9090"></div></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="equipModal=false">取&nbsp;消</button><button class="btn btn-primary" @click="submitEquip">保&nbsp;存</button></div>
+    </div>
+  </div>
+
+  <!-- Role Modal -->
+  <div class="modal-mask" v-if="roleModal" @click.self="roleModal=false">
+    <div class="modal w-md">
+      <div class="modal-header"><h3>{{roleForm.id?'编辑角色':'新增角色'}}</h3><span class="close-btn" @click="roleModal=false">×</span></div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field"><label>角色名称：</label><div class="ctrl"><input class="inp" v-model="roleForm.name" placeholder="如：调度员"></div></div>
+          <div class="form-field"><label>角色编码：</label><div class="ctrl"><input class="inp" v-model="roleForm.code" placeholder="如：dispatcher"></div></div>
+          <div class="form-field full"><label>角色描述：</label><div class="ctrl"><input class="inp" v-model="roleForm.desc" placeholder="描述角色职责"></div></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="roleModal=false">取&nbsp;消</button><button class="btn btn-primary">保&nbsp;存</button></div>
+    </div>
+  </div>
+
+  <!-- User Modal -->
+  <div class="modal-mask" v-if="userModal" @click.self="userModal=false">
+    <div class="modal w-md">
+      <div class="modal-header"><h3>{{userForm.id?'编辑用户':'新增用户'}}</h3><span class="close-btn" @click="userModal=false">×</span></div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field"><label>工号：</label><div class="ctrl"><input class="inp" v-model="userForm.code" placeholder="如：EMP001"></div></div>
+          <div class="form-field"><label>姓名：</label><div class="ctrl"><input class="inp" v-model="userForm.name" placeholder="请输入姓名"></div></div>
+          <div class="form-field"><label>手机号：</label><div class="ctrl"><input class="inp" v-model="userForm.phone" placeholder="请输入手机号"></div></div>
+          <div class="form-field"><label>所属车间：</label><div class="ctrl"><select class="sel" v-model="userForm.workshop"><option value="">请选择</option><option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option></select></div></div>
+          <div class="form-field"><label>所属角色：</label><div class="ctrl"><select class="sel" v-model="userForm.roleId"><option value="">请选择</option><option v-for="r in roles" :key="r.id" :value="r.id">{{r.name}}</option></select></div></div>
+          <div class="form-field"><label>技能等级：</label><div class="ctrl"><select class="sel" v-model="userForm.skill"><option value="1">L1 初级</option><option value="2">L2 中级</option><option value="3">L3 高级</option><option value="4">L4 专家</option></select></div></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn" @click="userModal=false">取&nbsp;消</button><button class="btn btn-primary">保&nbsp;存</button></div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+const {createApp,reactive,ref,computed,watch,onMounted,onUnmounted,nextTick}=Vue;
+
+createApp({
+  setup(){
+    // ===== Toast =====
+    const toasts=reactive([]);
+    let toastId=0;
+    const toast=(msg,type='info')=>{
+      const id=++toastId;
+      toasts.push({id,msg,type});
+      setTimeout(()=>{const i=toasts.findIndex(t=>t.id===id);if(i>-1)toasts.splice(i,1);},3000);
+    };
+
+    // ===== Login =====
+    const loggedIn=ref(false);
+    const loginRole=ref('dispatcher');
+    const loginName=ref('');
+    const currentUser=ref({realName:'',role:''});
+    const loginRoleMap={
+      reporter:{name:'张提报',label:'提报人'},
+      confirmer:{name:'赵确认',label:'确认人'},
+      dispatcher:{name:'张调度',label:'调度员'},
+      repairman:{name:'李维修',label:'维修工'},
+      verifier:{name:'张调度',label:'验收人'},
+      manager:{name:'王经理',label:'管理层'},
+      admin:{name:'系统管理员',label:'管理员'}
+    };
+    const roleLabel=computed(()=>loginRoleMap[currentUser.value.role]?.label||'');
+    const doLogin=()=>{
+      const info=loginRoleMap[loginRole.value];
+      currentUser.value={realName:info.name,role:loginRole.value};
+      loggedIn.value=true;
+      openTab('dashboard','仪表盘统计');
+      toast(`欢迎回来，${info.name}（${info.label}）`,'success');
+      setTimeout(()=>initCharts(),600);
+    };
+
+    // ===== Notifications =====
+    const showNotif=ref(false);
+    const unreadNotif=ref(3);
+
+    // ===== Menus =====
+    const menuFilter=ref('');
+    const activeMenu=ref('dashboard');
+    const menus=reactive([
+      {id:'dashboard',name:'仪表盘统计',icon:'📊'},
+      {id:'order',name:'工单管理',icon:'📋',open:true,children:[
+        {id:'order-list',name:'工单列表',icon:'📝'},
+        {id:'order-pm',name:'周期维护模板',icon:'🔄'},
+      ]},
+      {id:'equipment',name:'设备管理',icon:'🏭',open:false,children:[
+        {id:'equipment-list',name:'设备台账',icon:'📱'},
+      ]},
+      {id:'knowledge',name:'知识库',icon:'🤖',children:[
+        {id:'knowledge-search',name:'AI 综合查询',icon:'🔍'},
+      ]},
+      {id:'stats',name:'统计分析',icon:'📈',open:false,children:[
+        {id:'stats-person',name:'人员绩效',icon:'👥'},
+      ]},
+      {id:'config',name:'系统配置',icon:'⚙️',open:false,children:[
+        {id:'config-role',name:'角色管理',icon:'👤'},
+        {id:'config-permission',name:'权限配置',icon:'🔒'},
+        {id:'config-user',name:'用户管理',icon:'👥'},
+        {id:'config-workshop',name:'车间配置',icon:'🏗️'},
+        {id:'config-performance',name:'绩效规则',icon:'💰'},
+      ]},
+    ]);
+    const filteredMenus=computed(()=>{
+      if(!menuFilter.value)return menus;
+      const q=menuFilter.value.toLowerCase();
+      return menus.filter(m=>m.name.includes(q)||m.children?.some(c=>c.name.includes(q)));
+    });
+    const toggleMenu=(m)=>{if(m.children){m.open=!m.open;}else{goPage(m);}};
+    const goPage=(m)=>{activeMenu.value=m.id;openTab(m.id,m.name);};
+    const currentMenuName=computed(()=>{
+      for(const m of menus){if(m.id===activeMenu.value)return m.name;if(m.children)for(const c of m.children)if(c.id===activeMenu.value)return c.name;}
+      return '';
+    });
+
+    // ===== Tabs =====
+    const openTabs=reactive([{id:'dashboard',name:'仪表盘统计'}]);
+    const activeTab=ref('dashboard');
+    const configSub=ref('');
+    const openTab=(id,name)=>{if(!openTabs.find(t=>t.id===id))openTabs.push({id,name});activeTab.value=id;};
+    const closeTab=(id)=>{const idx=openTabs.findIndex(t=>t.id===id);if(idx>-1)openTabs.splice(idx,1);if(activeTab.value===id&&openTabs.length)activeTab.value=openTabs[Math.max(0,idx-1)].id;};
+
+    // ===== Permissions =====
+    const hasPermission=(perm)=>{
+      const permsMap={
+        reporter:['view'],
+        confirmer:['view','confirm'],
+        dispatcher:['view','confirm','dispatch'],
+        repairman:['view'],
+        verifier:['view','verify'],
+        manager:['view','export','detail'],
+        admin:['view','export','detail','edit','create','dispatch','confirm','verify']
+      };
+      return permsMap[currentUser.value.role]?.includes(perm);
+    };
+    const canCreate=computed(()=>hasPermission('create'));
+    const canDispatch=computed(()=>hasPermission('dispatch'));
+    const canConfirm=computed(()=>hasPermission('confirm'));
+    const canVerify=computed(()=>hasPermission('verify'));
+    const canEditConfig=computed(()=>hasPermission('edit'));
+    const canDetail=computed(()=>hasPermission('detail'));
+
+    // ===== Dashboard =====
+    const dash=reactive({totalHours:1256,todayOrders:18,pdConfirm:4,pdDispatch:3,pdAccept:5,todayPeriodic:8,todayTemp:6,todayEmergency:4,pending:23,timelyRate:94.6,cost:18.7});
+    const rankings=reactive([
+      {name:'李维修',hours:186,quality:98,firstFix:95,efficiency:1.12,level:3},
+      {name:'张师傅',hours:172,quality:96,firstFix:92,efficiency:1.05,level:2},
+      {name:'王技工',hours:165,quality:97,firstFix:94,efficiency:1.08,level:3},
+      {name:'刘师傅',hours:158,quality:95,firstFix:90,efficiency:0.95,level:2},
+      {name:'陈技工',hours:142,quality:93,firstFix:88,efficiency:0.88,level:2},
+      {name:'周师傅',hours:128,quality:91,firstFix:85,efficiency:0.82,level:2},
+      {name:'吴技工',hours:95,quality:88,firstFix:80,efficiency:0.75,level:1},
+    ]);
+    const equipTop=reactive([
+      {name:'总装线 #3 减速机',count:8,mttr:2.3,mtbf:1570},
+      {name:'焊装机器人 #7',count:6,mttr:3.1,mtbf:1867},
+      {name:'涂装烘干炉 #2',count:5,mttr:4.5,mtbf:2840},
+      {name:'冲压机 #1',count:4,mttr:1.8,mtbf:3900},
+      {name:'总装线 #2 拧紧机',count:5,mttr:1.8,mtbf:2040},
+      {name:'总装线 #5 输送带',count:3,mttr:1.2,mtbf:2973},
+      {name:'焊装机器人 #3',count:3,mttr:2.5,mtbf:4900},
+      {name:'涂装喷房 #1',count:3,mttr:2.8,mtbf:4467},
+      {name:'焊装机器人 #5',count:2,mttr:2.0,mtbf:5200},
+      {name:'涂装前处理 #1',count:2,mttr:3.5,mtbf:5800},
+    ]);
+    const trendChart=ref(null),typeChart=ref(null),costChart=ref(null),radarChart=ref(null);
+    let chartInstances=[];
+
+    const initCharts=()=>{
+      if(!window.echarts||typeof window.echarts.init!=='function'){setTimeout(initCharts,300);return;}
+      if(!loggedIn.value){setTimeout(initCharts,500);return;}
+      if(activeTab.value!=='dashboard')return;
+      chartInstances.forEach(c=>{try{c.dispose();}catch(e){}});
+      chartInstances=[];
+      nextTick(()=>{
+        if(!trendChart.value||!trendChart.value.clientHeight)return;
+        const days=Array.from({length:30},(_,i)=>'9/'+(i+1<10?'0':'')+(i+1));
+        const barData=days.map(()=>Math.floor(Math.random()*15)+5);
+        const lineData=days.map(()=>Math.floor(Math.random()*80)+30);
+        if(trendChart.value){
+          const c=echarts.init(trendChart.value);
+          c.setOption({
+            tooltip:{trigger:'axis'},
+            legend:{data:['工单量','工时'],bottom:0,textStyle:{fontSize:11}},
+            grid:{top:30,left:50,right:30,bottom:40},
+            xAxis:{type:'category',data:days,axisLabel:{fontSize:10,color:'#999'},axisLine:{lineStyle:{color:'#e5e8ed'}}},
+            yAxis:[{type:'value',axisLabel:{fontSize:10,color:'#999'},splitLine:{lineStyle:{color:'#e5e8ed'}}},{type:'value',axisLabel:{fontSize:10,color:'#999'},splitLine:{show:false}}],
+            series:[
+              {name:'工单量',type:'bar',data:barData,itemStyle:{color:'#4aa0dc'},barWidth:14},
+              {name:'工时',type:'line',yAxisIndex:1,data:lineData,smooth:true,lineStyle:{color:'#fa8c16',width:2},itemStyle:{color:'#fa8c16'},areaStyle:{color:'rgba(250,140,22,.1)'}}
+            ]
+          });
+          chartInstances.push(c);
+        }
+        if(typeChart.value){
+          const c=echarts.init(typeChart.value);
+          c.setOption({
+            tooltip:{trigger:'item'},
+            legend:{bottom:0,textStyle:{fontSize:11}},
+            series:[{type:'pie',radius:['45%','70%'],center:['50%','45%'],itemStyle:{borderRadius:4,borderColor:'#fff',borderWidth:2},label:{show:false,color:'#999'},
+              data:[
+                {value:520,name:'周期性维护',itemStyle:{color:'#4aa0dc'}},
+                {value:380,name:'临时任务',itemStyle:{color:'#52c41a'}},
+                {value:356,name:'紧急故障',itemStyle:{color:'#fa8c16'}}
+              ]
+            }]
+          });
+          chartInstances.push(c);
+        }
+        if(costChart.value){
+          const c=echarts.init(costChart.value);
+          c.setOption({
+            tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},
+            legend:{data:['工时成本','备件成本'],bottom:0,textStyle:{fontSize:11}},
+            grid:{top:20,left:50,right:20,bottom:40},
+            xAxis:{type:'category',data:['总装车间','焊装车间','涂装车间','冲压车间'],axisLabel:{fontSize:11,color:'#999'}},
+            yAxis:{type:'value',name:'万元',axisLabel:{fontSize:11,color:'#999'},splitLine:{lineStyle:{color:'#e5e8ed'}}},
+            series:[
+              {name:'工时成本',type:'bar',data:[5.2,3.8,4.1,2.8],itemStyle:{color:'#4aa0dc'},barWidth:20},
+              {name:'备件成本',type:'bar',data:[2.1,1.5,2.3,1.2],itemStyle:{color:'#fa8c16'},barWidth:20}
+            ]
+          });
+          chartInstances.push(c);
+        }
+        if(radarChart.value){
+          const c=echarts.init(radarChart.value);
+          c.setOption({
+            tooltip:{},
+            legend:{data:['本月','上月'],bottom:0,textStyle:{fontSize:11}},
+            radar:{indicator:[{name:'及时率',max:100},{name:'合格率',max:100},{name:'一次修复率',max:100},{name:'工时完成率',max:100},{name:'设备完好率',max:100}],center:['50%','52%'],radius:'65%'},
+            series:[{type:'radar',data:[
+              {value:[94.6,96,95,88,92],name:'本月',areaStyle:{color:'rgba(74,160,220,.2)'},lineStyle:{color:'#4aa0dc'}},
+              {value:[96.7,94,91,85,89],name:'上月',areaStyle:{color:'rgba(250,140,22,.15)'},lineStyle:{color:'#fa8c16'}}
+            ]}]
+          });
+          chartInstances.push(c);
+        }
+        setTimeout(()=>chartInstances.forEach(c=>{try{c.resize();}catch(e){}}),200);
+      });
+    };
+    watch(activeTab,(v)=>{if(v==='dashboard')setTimeout(initCharts,300);});
+
+    // ===== Drill-down =====
+    const drillTitle=ref(''),drillOrders=reactive([]);
+    const drillFilter=reactive({type:'',status:'',workshop:''});
+    const statusMap={pending_confirm:'待确认',pending_dispatch:'待派工',pending_accept:'待接单',working:'作业中',pending_acceptance:'待验收',closed:'已关闭',rejected:'已驳回',postponed:'已延后',reworking:'返修中'};
+    const filteredDrillOrders=computed(()=>{
+      return drillOrders.filter(o=>{
+        if(drillFilter.type&&o.type!==drillFilter.type)return false;
+        if(drillFilter.status&&o.status!==drillFilter.status)return false;
+        if(drillFilter.workshop&&o.workshop!==drillFilter.workshop)return false;
+        return true;
+      });
+    });
+    const goDrill=(type)=>{
+      const map={
+        totalHours:{title:'本月全部工单明细',filter:{}},
+        todayNew:{title:'今日新增工单',filter:{}},
+        pending:{title:'待处理工单',filter:{status:'pending_confirm'}},
+        timely:{title:'及时率工单',filter:{}},
+        type:{title:'分类型工时统计',filter:{}},
+        cost:{title:'分车间维修成本',filter:{}},
+        radar:{title:'核心指标对比',filter:{}},
+        rank:{title:'人员工时排名',filter:{}},
+        equip:{title:'设备故障TOP10',filter:{}},
+        trend:{title:'近30天工单趋势',filter:{}},
+      };
+      const cfg=map[type]||{title:type,filter:{}};
+      drillTitle.value=cfg.title;
+      drillOrders.splice(0);
+      drillOrders.push(...orders);
+      activeTab.value='dashboard-drill';
+    };
+    const searchDrill=()=>{}; // computed already handles it
+
+    // ===== Orders =====
+    const filters=reactive({orderNo:'',type:'',status:'',workshop:'',assignee:'',dateStart:'',dateEnd:''});
+    const statusMapReactive=statusMap;
+    const orders=reactive([
+      {id:1,orderNo:'WO-20260918-0001',type:'emergency',urgency:'urgent',equipment:'总装线 #3 减速机',title:'轴承异响需停机检修',workshop:'总装车间',assignee:'李维修',status:'working',plannedHours:3,actualHours:2.5,skillRequired:'L3',createdAt:'2026-09-18 08:32',arriveTime:'08:50',postponeHours:0,description:'总装线 #3 减速机运行过程中发出明显异响，温度升高至78℃。',logs:[{time:'08:32',action:'创建工单',operator:'张提报',remark:''},{time:'08:35',action:'确认通过',operator:'赵确认',remark:''},{time:'08:36',action:'派工',operator:'张调度',remark:'派发至李维修'},{time:'08:42',action:'抢单',operator:'李维修',remark:''},{time:'08:50',action:'扫码到场',operator:'李维修',remark:'GPS校验通过'}]},
+      {id:2,orderNo:'WO-20260918-0002',type:'periodic',urgency:'medium',equipment:'焊装机器人 #7',title:'月度PM保养-润滑系统检查',workshop:'焊装车间',assignee:'张师傅',status:'pending_accept',plannedHours:2,actualHours:0,skillRequired:'L2',createdAt:'2026-09-18 07:00',description:'月度预防性维护：检查焊装机器人#7润滑系统油位、油质。',logs:[{time:'07:00',action:'周期触发',operator:'系统',remark:'月度PM'},{time:'07:05',action:'自动派工',operator:'系统',remark:'派发至张师傅'}]},
+      {id:3,orderNo:'WO-20260918-0003',type:'temporary',urgency:'medium',equipment:'-',title:'围墙修缮-东区围栏破损',workshop:'总装车间',assignee:'',status:'pending_dispatch',plannedHours:4,actualHours:0,skillRequired:'',createdAt:'2026-09-18 09:15',description:'东区围栏因车辆碰撞出现破损，需进行焊接修复。',logs:[{time:'09:15',action:'创建工单',operator:'张提报',remark:''},{time:'09:18',action:'确认通过',operator:'赵确认',remark:''}]},
+      {id:4,orderNo:'WO-20260918-0004',type:'emergency',urgency:'high',equipment:'涂装烘干炉 #2',title:'温控异常温度波动超差',workshop:'涂装车间',assignee:'王技工',status:'pending_acceptance',plannedHours:2.5,actualHours:3,skillRequired:'L3',createdAt:'2026-09-17 22:10',arriveTime:'22:30',description:'涂装烘干炉#2温度控制系统异常，设定180℃实际波动±15℃。',logs:[{time:'22:10',action:'创建工单',operator:'张提报',remark:''},{time:'22:15',action:'派工',operator:'张调度',remark:'派发至王技工'},{time:'22:30',action:'扫码到场',operator:'王技工',remark:''},{time:'01:30',action:'提交验收',operator:'王技工',remark:''}]},
+      {id:5,orderNo:'WO-20260917-0005',type:'periodic',urgency:'medium',equipment:'冲压机 #1',title:'季度PM保养-滤芯更换',workshop:'冲压车间',assignee:'刘师傅',status:'closed',plannedHours:1.5,actualHours:1.2,skillRequired:'L2',createdAt:'2026-09-17 07:00',arriveTime:'07:15',closeTime:'08:30',description:'季度预防性维护：更换冲压机#1滤芯。',logs:[{time:'07:00',action:'周期触发',operator:'系统',remark:''},{time:'07:05',action:'自动派工',operator:'系统',remark:''},{time:'07:15',action:'扫码到场',operator:'刘师傅',remark:''},{time:'08:30',action:'扫码闭环',operator:'刘师傅',remark:''},{time:'08:31',action:'验收通过',operator:'张调度',remark:'合格'}]},
+      {id:6,orderNo:'WO-20260918-0006',type:'temporary',urgency:'low',equipment:'-',title:'更换车间照明灯泡（10个）',workshop:'焊装车间',assignee:'',status:'pending_accept',plannedHours:1,actualHours:0,skillRequired:'',createdAt:'2026-09-18 10:05',description:'焊装车间B区照明灯泡损坏10个。',logs:[{time:'10:05',action:'创建工单',operator:'陈员工',remark:''},{time:'10:08',action:'确认通过',operator:'赵确认',remark:''},{time:'10:10',action:'抢单',operator:'李维修',remark:''}]},
+      {id:7,orderNo:'WO-20260918-0007',type:'emergency',urgency:'urgent',equipment:'总装线 #5 输送带',title:'输送带断裂产线停机',workshop:'总装车间',assignee:'',status:'pending_confirm',plannedHours:5,actualHours:0,skillRequired:'L3',createdAt:'2026-09-18 10:22',description:'总装线#5输送带中部断裂，产线已停机，急需抢修。',backfill:true,backfillUrgent:true,logs:[{time:'10:22',action:'创建工单',operator:'张提报',remark:'紧急·后补工单'}]},
+      {id:8,orderNo:'WO-20260918-0008',type:'periodic',urgency:'medium',equipment:'总装线 #5 输送机',title:'年度PM保养-减速机换油',workshop:'总装车间',assignee:'李维修',status:'pending_accept',plannedHours:3,actualHours:0,skillRequired:'L3',createdAt:'2026-09-16 07:00',description:'年度预防性维护：减速机润滑油更换。',logs:[{time:'07:00',action:'周期触发',operator:'系统',remark:'年度PM'},{time:'07:05',action:'自动派工',operator:'系统',remark:'派发至李维修'}]},
+      {id:9,orderNo:'WO-20260917-0009',type:'temporary',urgency:'low',equipment:'-',title:'修复厂区北门路面',workshop:'冲压车间',assignee:'刘师傅',status:'closed',plannedHours:6,actualHours:5,skillRequired:'',createdAt:'2026-09-16 14:00',arriveTime:'14:20',closeTime:'19:30',description:'厂区北门路面破损修复。',logs:[{time:'14:00',action:'创建工单',operator:'张提报',remark:''},{time:'14:05',action:'派工',operator:'张调度',remark:'派发至刘师傅'},{time:'14:20',action:'扫码到场',operator:'刘师傅',remark:''},{time:'19:30',action:'扫码闭环',operator:'刘师傅',remark:''},{time:'19:35',action:'验收通过',operator:'赵确认',remark:'合格'}]},
+      {id:10,orderNo:'WO-20260916-0010',type:'emergency',urgency:'high',equipment:'涂装喷房 #1',title:'喷枪堵塞影响喷涂质量',workshop:'涂装车间',assignee:'王技工',status:'working',plannedHours:2,actualHours:1,efficiency:1.2,skillRequired:'L3',createdAt:'2026-09-16 16:30',arriveTime:'16:45',postponeHours:0,description:'涂装喷房#1喷枪频繁堵塞，影响车身喷涂质量。',logs:[{time:'16:30',action:'创建工单',operator:'陈员工',remark:''},{time:'16:35',action:'确认通过',operator:'赵确认',remark:''},{time:'16:38',action:'派工',operator:'张调度',remark:'派发至王技工'},{time:'16:45',action:'扫码到场',operator:'王技工',remark:'GPS在围栏内'}]},
+    ]);
+    const filteredOrders=computed(()=>{
+      return orders.filter(o=>{
+        if(filters.orderNo&&!o.orderNo.includes(filters.orderNo))return false;
+        if(filters.type&&o.type!==filters.type)return false;
+        if(filters.status&&o.status!==filters.status)return false;
+        if(filters.workshop&&o.workshop!==filters.workshop)return false;
+        if(filters.assignee&&!o.assignee.includes(filters.assignee))return false;
+        return true;
+      });
+    });
+    const pendingCount=computed(()=>orders.filter(o=>['pending_confirm','pending_dispatch','pending_accept','working'].includes(o.status)).length);
+    const pageNum=ref(1),pageSize=ref(5);
+    const pageTotal=computed(()=>Math.max(1,Math.ceil(filteredOrders.value.length/pageSize.value)));
+    const pageList=computed(()=>{const t=pageTotal.value,c=pageNum.value;const p=[];let s=Math.max(1,c-2),e=Math.min(t,s+4);s=Math.max(1,e-4);for(let i=s;i<=e;i++)p.push(i);return p;});
+    const pagedOrders=computed(()=>{const s=(pageNum.value-1)*pageSize.value;return filteredOrders.value.slice(s,s+pageSize.value);});
+    const resetFilters=()=>{Object.keys(filters).forEach(k=>filters[k]='');pageNum.value=1;};
+
+    const typeLabel=(t)=>({periodic:'周期性维护',temporary:'临时任务',emergency:'紧急故障'}[t]||t);
+    const typeColor=(t)=>({periodic:'tag-blue',temporary:'tag-orange',emergency:'tag-red'}[t]||'tag-gray');
+    const statusLabel=(s)=>statusMap[s]||s;
+    const statusColor=(s)=>({pending_confirm:'tag-orange',pending_dispatch:'tag-purple',pending_accept:'tag-cyan',working:'tag-blue',pending_acceptance:'tag-orange',closed:'tag-green',rejected:'tag-red',postponed:'tag-gray',reworking:'tag-red'}[s]||'tag-gray');
+    const urgencyLabel=(u)=>({urgent:'紧急',high:'高',medium:'中',low:'低'}[u]||u||'-');
+    const stateClass=(state,currentStatus)=>{
+      const flow=['pending_confirm','pending_dispatch','pending_accept','working','pending_acceptance','closed'];
+      const curIdx=flow.indexOf(currentStatus);
+      const stateIdx=flow.indexOf(state);
+      if(['rejected','postponed','reworking'].includes(currentStatus)){
+        if(currentStatus===state)return 'rejected';
+        return 'pending';
+      }
+      if(stateIdx<=curIdx)return stateIdx===curIdx?'current':'done';
+      return 'pending';
+    };
+
+    // Checkboxes
+    const checkAll=computed(()=>pagedOrders.value.length>0&&pagedOrders.value.every(o=>selectedOrders.includes(o.id)));
+    const selectedOrders=reactive([]);
+    const toggleCheckAll=()=>{
+      if(checkAll.value){selectedOrders.splice(0);}
+      else{pagedOrders.value.forEach(o=>{if(!selectedOrders.includes(o.id))selectedOrders.push(o.id);});}
+    };
+    const toggleOrder=(id)=>{const i=selectedOrders.indexOf(id);if(i>-1)selectedOrders.splice(i,1);else selectedOrders.push(id);};
+
+    // ===== Equipment =====
+    const equipFilter=reactive({code:'',name:'',workshop:'',status:''});
+    const equipDetail=ref(null);
+    const equipList=reactive([
+      {id:1,code:'EQ-001',name:'总装线 #3 减速机',model:'SEW R87 DRE',workshop:'总装车间',location:'A区3号线',status:'repairing',faultCount:8,runHours:12560,mtbf:1570,mttr:2.3,lng:'116.3974',lat:'39.9090',fenceRadius:50,records:[{time:'2026-09-18',orderNo:'WO-0001',desc:'轴承异响',repairman:'李维修',hours:2.5},{time:'2026-07-12',orderNo:'WO-0234',desc:'润滑油泄漏',repairman:'张师傅',hours:1.5},{time:'2026-04-03',orderNo:'WO-0156',desc:'联轴器对中调整',repairman:'李维修',hours:3}]},
+      {id:2,code:'EQ-003',name:'总装线 #5 输送带',model:'Hytrol CRR-25',workshop:'总装车间',location:'A区5号线',status:'running',faultCount:3,runHours:8920,mtbf:2973,mttr:1.2,lng:'116.3980',lat:'39.9095',fenceRadius:50,records:[{time:'2026-09-18',orderNo:'WO-0007',desc:'输送带断裂',repairman:'待派工',hours:0},{time:'2026-05-20',orderNo:'WO-0189',desc:'皮带跑偏调整',repairman:'刘师傅',hours:1}]},
+      {id:3,code:'EQ-005',name:'总装线 #2 拧紧机',model:'Atlas ET-30',workshop:'总装车间',location:'A区2号线',status:'running',faultCount:5,runHours:10200,mtbf:2040,mttr:1.8,lng:'116.3968',lat:'39.9085',fenceRadius:30,records:[{time:'2026-09-18',orderNo:'WO-0010',desc:'扭矩漂移报警',repairman:'李维修',hours:0}]},
+      {id:4,code:'EQ-008',name:'冲压机 #1',model:'AIDA NC1-2500',workshop:'冲压车间',location:'C区1号',status:'running',faultCount:4,runHours:15600,mtbf:3900,mttr:1.8,lng:'116.3950',lat:'39.9070',fenceRadius:80,records:[{time:'2026-09-17',orderNo:'WO-0005',desc:'季度PM滤芯更换',repairman:'刘师傅',hours:1.2}]},
+      {id:5,code:'EQ-011',name:'焊装机器人 #3',model:'FANUC R-2000iC',workshop:'焊装车间',location:'B区3号',status:'idle',faultCount:2,runHours:9800,mtbf:4900,mttr:2.5,lng:'116.3940',lat:'39.9060',fenceRadius:40,records:[{time:'2026-06-15',orderNo:'WO-0210',desc:'焊枪更换',repairman:'张师傅',hours:2}]},
+      {id:6,code:'EQ-015',name:'焊装机器人 #7',model:'FANUC R-2000iC',workshop:'焊装车间',location:'B区7号',status:'running',faultCount:6,runHours:11200,mtbf:1867,mttr:3.1,lng:'116.3945',lat:'39.9065',fenceRadius:40,records:[{time:'2026-09-18',orderNo:'WO-0002',desc:'月度PM保养',repairman:'张师傅',hours:0},{time:'2026-08-01',orderNo:'WO-0245',desc:'伺服电机报警',repairman:'王技工',hours:4}]},
+      {id:7,code:'EQ-018',name:'涂装喷房 #1',model:'Durr EcoPaint',workshop:'涂装车间',location:'D区1号',status:'running',faultCount:3,runHours:13400,mtbf:4467,mttr:2.8,lng:'116.3930',lat:'39.9050',fenceRadius:60,records:[{time:'2026-07-22',orderNo:'WO-0228',desc:'喷嘴清洗',repairman:'王技工',hours:1.5}]},
+      {id:8,code:'EQ-022',name:'涂装烘干炉 #2',model:'Durr EcoOven',workshop:'涂装车间',location:'D区2号',status:'repairing',faultCount:5,runHours:14200,mtbf:2840,mttr:4.5,lng:'116.3935',lat:'39.9055',fenceRadius:60,records:[{time:'2026-09-17',orderNo:'WO-0004',desc:'温控异常',repairman:'王技工',hours:3},{time:'2026-06-30',orderNo:'WO-0201',desc:'燃烧器维护',repairman:'王技工',hours:4}]},
+    ]);
+    const filteredEquipList=computed(()=>{
+      return equipList.filter(e=>{
+        if(equipFilter.code&&!e.code.includes(equipFilter.code))return false;
+        if(equipFilter.name&&!e.name.includes(equipFilter.name))return false;
+        if(equipFilter.workshop&&e.workshop!==equipFilter.workshop)return false;
+        if(equipFilter.status&&e.status!==equipFilter.status)return false;
+        return true;
+      });
+    });
+    const repairingCount=computed(()=>equipList.filter(e=>e.status==='repairing').length);
+    const searchEquip=()=>{};
+    const resetEquipFilter=()=>{Object.keys(equipFilter).forEach(k=>equipFilter[k]='');};
+    const equipStatusLabel=(s)=>({running:'运行中',idle:'空闲',repairing:'维修中',scrapped:'已报废'}[s]||s);
+    const equipStatusColor=(s)=>({running:'tag-green',idle:'tag-gray',repairing:'tag-red',scrapped:'tag-gray'}[s]||'tag-gray');
+    const openEquipDetail=(e)=>{equipDetail.value=e;};
+    // Equipment Modal
+    const equipModal=ref(false),equipForm=reactive({id:null,code:'',name:'',model:'',workshop:'',location:'',fenceRadius:50,lng:'',lat:''});
+    const openEquipModal=(e)=>{if(e){Object.assign(equipForm,e);}else{Object.assign(equipForm,{id:null,code:'',name:'',model:'',workshop:'',location:'',fenceRadius:50,lng:'',lat:''});}equipModal.value=true;};
+    const submitEquip=()=>{if(!equipForm.code||!equipForm.name){toast('请填写设备编码和名称','warning');return;}equipModal.value=false;toast('设备保存成功！','success');};
+    const scanQRCode=(e)=>{toast(`扫码成功：${e.code} ${e.name}\nGPS校验：在围栏范围内 ✓`,'success');};
+    const scrapEquip=(e)=>{if(confirm(`确认报废设备 ${e.name}？`)){e.status='scrapped';toast('设备已报废','success');}};
+    const printQRCode=()=>{toast('二维码打印任务已提交','info');};
+
+    // ===== Knowledge Base =====
+    const kbQuery=ref(''),kbCategory=ref(''),kbModel=ref('');
+    const kbResults=reactive([]);
+    const searchKB=()=>{
+      if(!kbQuery.value){toast('请输入查询关键词','warning');return;}
+      kbResults.splice(0);
+      const allResults=[
+        {category:'case',categoryLabel:'故障案例',title:'减速机轴承异响故障处理案例（总装线#3）',score:96,highlight:'故障现象：轴承运行过程中发出明显异响，温度升高至78℃。<br>处理措施：停机检查发现轴承润滑脂干涸，更换轴承（型号：SKF 6314）并重新加注高温润滑脂。<br>处理结果：运行正常，温度恢复至45℃，已连续运行2个月无异常。',source:'历史维修记录 WO-20260918-0001',date:'2026-09-18'},
+        {category:'manual',categoryLabel:'维保手册',title:'SEW减速机维护手册 — 轴承章节',score:88,highlight:'维护周期：轴承润滑脂每6个月更换一次，使用SKF LGHP 2高温润滑脂。<br>检查项：运行温度≤65℃，振动值≤2.8mm/s，无异响。<br>更换标准：振动值超过4.0mm/s或温度超过75℃需立即停机检查。',source:'《SEW减速机维护手册》v3.2',date:'2025-06-15'},
+        {category:'guide',categoryLabel:'作业指导',title:'轴承更换作业指导书',score:82,highlight:'作业步骤：1.停机断电挂牌→2.拆除联轴器→3.拆卸轴承端盖→4.使用拉马拆卸旧轴承→5.加热新轴承至80℃安装→6.加注润滑脂→7.恢复运行测试。<br>所需工具：三爪拉马、轴承加热器、扭矩扳手。标准工时：3小时。',source:'《设备维护作业指导书》MB-001',date:'2025-03-20'},
+        {category:'case',categoryLabel:'故障案例',title:'涂装烘干炉温控异常处理案例',score:75,highlight:'故障现象：烘干炉温度控制系统异常，设定180℃实际波动±15℃。<br>排查步骤：1.检查温度传感器→2.检查控制器参数→3.检查加热器输出。<br>处理措施：更换温度传感器（Pt100），重新校准控制器。',source:'历史维修记录 WO-20260918-0004',date:'2026-09-17'},
+      ];
+      const filtered=kbCategory.value?allResults.filter(r=>r.category===kbCategory.value):allResults;
+      filtered.forEach(r=>kbResults.push(r));
+      if(!kbResults.length)toast('未找到相关知识，请尝试其他关键词','info');
+    };
+    const importDoc=()=>toast('文档导入功能开发中...','info');
+    const addKnowledge=()=>toast('新增知识功能开发中...','info');
+    const batchImport=()=>toast('批量导入功能开发中...','info');
+
+    // ===== PM Template =====
+    const pmModal=ref(false),pmForm=reactive({id:null,equipmentId:'',itemName:'',cycle:'monthly',hours:'',skill:'2',assignee:'',remindDays:'3',status:'active'});
+    const pmTemplates=reactive([
+      {id:1,equipment:'总装线 #3 减速机',itemName:'月度PM保养 — 润滑系统检查',cycle:'monthly',hours:2,skill:3,assignee:'李维修',nextTrigger:'2026-10-18',status:'active'},
+      {id:2,equipment:'焊装机器人 #7',itemName:'月度PM保养 — 焊枪清洁校准',cycle:'monthly',hours:1.5,skill:2,assignee:'张师傅',nextTrigger:'2026-10-18',status:'active'},
+      {id:3,equipment:'冲压机 #1',itemName:'季度PM保养 — 滤芯更换',cycle:'quarterly',hours:1.5,skill:2,assignee:'刘师傅',nextTrigger:'2026-12-17',status:'active'},
+      {id:4,equipment:'涂装烘干炉 #2',itemName:'半年度PM保养 — 燃烧器检查',cycle:'semi_annual',hours:4,skill:3,assignee:'王技工',nextTrigger:'2027-03-17',status:'active'},
+      {id:5,equipment:'总装线 #5 输送机',itemName:'年度PM保养 — 减速机换油',cycle:'annual',hours:3,skill:3,assignee:'李维修',nextTrigger:'2027-09-18',status:'active'},
+    ]);
+    const cycleLabel=(c)=>({monthly:'月度',quarterly:'季度',semi_annual:'半年度',annual:'年度'}[c]||c);
+    const openPMModal=(pm)=>{if(pm){Object.assign(pmForm,pm);}else{Object.assign(pmForm,{id:null,equipmentId:'',itemName:'',cycle:'monthly',hours:'',skill:'2',assignee:'',remindDays:'3',status:'active'});}pmModal.value=true;};
+    const submitPM=()=>{if(!pmForm.equipmentId||!pmForm.itemName){toast('请填写必填项','warning');return;}pmModal.value=false;toast('模板保存成功！','success');};
+    const batchGeneratePM=()=>{toast(`已根据${pmTemplates.length}个模板生成当月工单！`,'success');};
+    const previewPM=(t)=>{toast(`预览：${t.equipment} - ${t.itemName}\n周期：${cycleLabel(t.cycle)} | 工时：${t.hours}h`,'info');};
+    const togglePM=(t)=>{t.status=t.status==='active'?'inactive':'active';toast(t.status==='active'?'模板已启用':'模板已停用','success');};
+
+    // ===== Performance =====
+    const performanceList=reactive([
+      {id:1,name:'李维修',level:3,hours:186,orders:42,quality:98,firstFix:95,efficiency:1.12,grade:'A+',rate:80,coefficient:1.2},
+      {id:2,name:'王技工',level:3,hours:165,orders:38,quality:97,firstFix:94,efficiency:1.08,grade:'A',rate:80,coefficient:1.1},
+      {id:3,name:'张师傅',level:2,hours:172,orders:45,quality:96,firstFix:92,efficiency:1.02,grade:'A',rate:65,coefficient:1.1},
+      {id:4,name:'刘师傅',level:2,hours:158,orders:40,quality:95,firstFix:90,efficiency:0.95,grade:'B+',rate:65,coefficient:1.0},
+      {id:5,name:'陈技工',level:2,hours:142,orders:38,quality:93,firstFix:88,efficiency:0.88,grade:'B+',rate:65,coefficient:1.0},
+      {id:6,name:'周师傅',level:2,hours:128,orders:35,quality:91,firstFix:85,efficiency:0.82,grade:'B',rate:65,coefficient:0.9},
+      {id:7,name:'吴技工',level:1,hours:95,orders:28,quality:88,firstFix:80,efficiency:0.75,grade:'B',rate:50,coefficient:0.9},
+    ]);
+    const levelText=(l)=>({1:'初级',2:'中级',3:'高级',4:'专家'}[l]||'');
+    const perfDimensions=reactive([
+      {key:'hours',name:'工时完成量',weight:30},
+      {key:'quality',name:'维修合格率',weight:30},
+      {key:'firstFix',name:'一次修复率',weight:20},
+      {key:'efficiency',name:'效率系数',weight:20},
+    ]);
+    const perfWeightSum=computed(()=>perfDimensions.reduce((s,d)=>s+Number(d.weight),0));
+    const perfGrades=reactive([
+      {grade:'A+',min:90,max:100,coefficient:1.2,desc:'优秀，绩效系数上浮20%',color:'#52c41a'},
+      {grade:'A',min:80,max:89,coefficient:1.1,desc:'良好，绩效系数上浮10%',color:'#52c41a'},
+      {grade:'B+',min:70,max:79,coefficient:1.0,desc:'合格，标准绩效',color:'#1677bb'},
+      {grade:'B',min:60,max:69,coefficient:0.9,desc:'待改进，绩效系数下浮10%',color:'#1677bb'},
+      {grade:'C',min:50,max:59,coefficient:0.7,desc:'不合格，需培训',color:'#fa8c16'},
+      {grade:'D',min:0,max:49,coefficient:0.5,desc:'严重不合格，降级处理',color:'#e64545'},
+    ]);
+
+    // ===== Config: Roles & Permissions =====
+    const roles=reactive([
+      {id:1,name:'提报人',code:'reporter',desc:'扫码提报故障，创建工单',userCount:8,status:'active',permissions:{order:['view'],equipment:['view']}},
+      {id:2,name:'确认人',code:'confirmer',desc:'确认或驳回工单提报，A/B角互备',userCount:4,status:'active',permissions:{order:['view','confirm','reject'],equipment:['view']}},
+      {id:3,name:'调度员',code:'dispatcher',desc:'跨人员跨班组协调、强制派单、调整责任人',userCount:3,status:'active',permissions:{order:['view','dispatch','force_dispatch','adjust'],equipment:['view'],stats:['view_workshop']}},
+      {id:4,name:'维修工',code:'repairman',desc:'接单、作业、提交验收、申请延后/回退',userCount:12,status:'active',permissions:{order:['view_own','grab','submit_acceptance','postpone','return'],stats:['view_own']}},
+      {id:5,name:'验收人',code:'verifier',desc:'质量验收，合格闭环/不合格回退',userCount:3,status:'active',permissions:{order:['view','verify'],equipment:['view']}},
+      {id:6,name:'管理层',code:'manager',desc:'查看全维度统计报表、人员排名、成本数据',userCount:5,status:'active',permissions:{order:['view_all'],equipment:['view'],stats:['view_all','export'],config:['view']}},
+      {id:7,name:'管理员',code:'admin',desc:'系统配置、权限管理、用户管理',userCount:2,status:'active',permissions:{order:['view_all','edit','delete'],equipment:['view','edit','add','delete'],stats:['view_all','export'],config:['view','edit','add','delete']}},
+    ]);
+    const roleModal=ref(false),roleForm=reactive({id:null,name:'',code:'',desc:''});
+    const openRoleModal=(r)=>{if(r){Object.assign(roleForm,r);}else{Object.assign(roleForm,{id:null,name:'',code:'',desc:''});}roleModal.value=true;};
+    const deleteRole=(r)=>{if(confirm(`确认删除角色"${r.name}"？`)){const i=roles.findIndex(x=>x.id===r.id);if(i>-1)roles.splice(i,1);toast('角色已删除','success');}};
+
+    const currentRoleId=ref(3);
+    const currentRoleName=computed(()=>roles.find(r=>r.id===currentRoleId.value)?.name||'请选择角色');
+    const permissionModules=reactive([
+      {key:'order',name:'工单管理',permissions:[{key:'view',name:'查看工单'},{key:'view_own',name:'查看本人工单'},{key:'view_all',name:'查看全厂工单'},{key:'confirm',name:'确认工单'},{key:'reject',name:'驳回工单'},{key:'dispatch',name:'派工'},{key:'force_dispatch',name:'强制派单'},{key:'adjust',name:'调整责任人'},{key:'grab',name:'抢单'},{key:'submit_acceptance',name:'提交验收'},{key:'postpone',name:'申请延后'},{key:'return',name:'申请回退'},{key:'edit',name:'编辑工单'},{key:'delete',name:'删除工单'}]},
+      {key:'equipment',name:'设备管理',permissions:[{key:'view',name:'查看设备'},{key:'add',name:'新增设备'},{key:'edit',name:'编辑设备'},{key:'delete',name:'删除设备'},{key:'qrcode',name:'打印二维码'}]},
+      {key:'stats',name:'统计分析',permissions:[{key:'view_workshop',name:'查看本车间统计'},{key:'view_all',name:'查看全厂统计'},{key:'view_own',name:'查看本人数据'},{key:'export',name:'导出报表'}]},
+      {key:'config',name:'系统配置',permissions:[{key:'view',name:'查看配置'},{key:'edit',name:'修改配置'},{key:'add',name:'新增配置'},{key:'delete',name:'删除配置'}]},
+    ]);
+    const hasPerm=(modKey,permKey)=>{const r=roles.find(r=>r.id===currentRoleId.value);return r&&r.permissions[modKey]&&r.permissions[modKey].includes(permKey);};
+    const togglePermission=(modKey,permKey)=>{const r=roles.find(r=>r.id===currentRoleId.value);if(!r)return;if(!r.permissions[modKey])r.permissions[modKey]=[];const idx=r.permissions[modKey].indexOf(permKey);if(idx>-1){r.permissions[modKey].splice(idx,1);}else{r.permissions[modKey].push(permKey);}};
+    const savePermission=()=>toast('权限配置已保存','success');
+
+    // ===== Config: Users =====
+    const users=reactive([
+      {id:1,name:'张提报',code:'EMP001',phone:'13800138001',workshop:'总装车间',roleId:1,roleName:'提报人',skill:2,onDuty:true},
+      {id:2,name:'赵确认',code:'EMP002',phone:'13800138002',workshop:'总装车间',roleId:2,roleName:'确认人',skill:2,onDuty:true},
+      {id:3,name:'张调度',code:'EMP003',phone:'13800138003',workshop:'总装车间',roleId:3,roleName:'调度员',skill:3,onDuty:true},
+      {id:4,name:'李维修',code:'EMP004',phone:'13800138004',workshop:'总装车间',roleId:4,roleName:'维修工',skill:3,onDuty:true},
+      {id:5,name:'张师傅',code:'EMP005',phone:'13800138005',workshop:'焊装车间',roleId:4,roleName:'维修工',skill:2,onDuty:true},
+      {id:6,name:'王技工',code:'EMP006',phone:'13800138006',workshop:'涂装车间',roleId:4,roleName:'维修工',skill:3,onDuty:false},
+      {id:7,name:'刘师傅',code:'EMP007',phone:'13800138006',workshop:'冲压车间',roleId:4,roleName:'维修工',skill:2,onDuty:true},
+      {id:8,name:'王经理',code:'EMP008',phone:'13800138008',workshop:'',roleId:6,roleName:'管理层',skill:0,onDuty:true},
+      {id:9,name:'系统管理员',code:'EMP009',phone:'13800138009',workshop:'',roleId:7,roleName:'管理员',skill:0,onDuty:true},
+    ]);
+    const userModal=ref(false),userForm=reactive({id:null,name:'',code:'',phone:'',workshop:'',roleId:'',skill:2});
+    const userFilter=reactive({name:'',workshop:'',role:'',status:''});
+    const filteredUsers=computed(()=>{
+      return users.filter(u=>{
+        if(userFilter.name&&!u.name.includes(userFilter.name))return false;
+        if(userFilter.workshop&&u.workshop!==userFilter.workshop)return false;
+        if(userFilter.role&&u.roleId!==Number(userFilter.role))return false;
+        return true;
+      });
+    });
+    const openUserModal=(u)=>{if(u){Object.assign(userForm,u);}else{Object.assign(userForm,{id:null,name:'',code:'',phone:'',workshop:'',roleId:'',skill:2});}userModal.value=true;};
+    const resetUserFilter=()=>{Object.keys(userFilter).forEach(k=>userFilter[k]='');};
+
+    // ===== Config: Workshops =====
+    const workshops=reactive([
+      {id:1,name:'总装车间',code:'WS01',confirmerA:'赵确认',confirmerB:'钱调度',confirmerAOnline:true,dispatcher:'张调度',grabTimeout:15,postTimeout:240},
+      {id:2,name:'焊装车间',code:'WS02',confirmerA:'孙确认',confirmerB:'李调度',confirmerAOnline:false,dispatcher:'周调度',grabTimeout:15,postTimeout:240},
+      {id:3,name:'涂装车间',code:'WS03',confirmerA:'吴确认',confirmerB:'郑调度',confirmerAOnline:true,dispatcher:'王调度',grabTimeout:10,postTimeout:180},
+      {id:4,name:'冲压车间',code:'WS04',confirmerA:'冯确认',confirmerB:'陈调度',confirmerAOnline:true,dispatcher:'褚调度',grabTimeout:20,postTimeout:300},
+    ]);
+    const currentConfirmerA=computed(()=>workshops[0]?.confirmerA||'');
+    const currentConfirmerB=computed(()=>workshops[0]?.confirmerB||'');
+    const openWorkshopModal=(w)=>{toast('车间配置编辑功能开发中...','info');};
+
+    // ===== Order Operations =====
+    const detailOrder=ref(null);
+    const openDetail=(o)=>{detailOrder.value=o;};
+
+    const createOrder=ref(false);
+    const newOrder=reactive({type:'temporary',urgency:'medium',workshop:'',equipmentId:'',skill:'',hours:'',title:'',desc:'',preAssignee:''});
+    const equipLineByWorkshop=(ws)=>{if(!ws)return[];return equipList.filter(e=>e.workshop===ws);};
+    const selectedEquip=computed(()=>equipList.find(e=>e.id==newOrder.equipmentId));
+    const openCreate=()=>{Object.assign(newOrder,{type:'temporary',urgency:'medium',workshop:'总装车间',equipmentId:'',skill:'',hours:'',title:'',desc:'',preAssignee:''});createOrder.value=true;};
+    const submitCreate=()=>{
+      const eq=equipList.find(e=>e.id==newOrder.equipmentId);
+      if(!newOrder.title){toast('请填写工单标题','warning');return;}
+      if(newOrder.type!=='temporary'&&!eq){toast('请选择设备','warning');return;}
+      if(!newOrder.desc){toast('请填写任务描述','warning');return;}
+      const no='WO-20260918-'+String(orders.length+1).padStart(4,'0');
+      const initialStatus=newOrder.type==='emergency'?'pending_dispatch':'pending_confirm';
+      orders.unshift({id:Date.now(),orderNo:no,type:newOrder.type,urgency:newOrder.urgency,equipment:eq?.name||'-',title:newOrder.title,workshop:newOrder.workshop,assignee:newOrder.preAssignee||'',status:initialStatus,plannedHours:Number(newOrder.hours)||0,actualHours:0,skillRequired:newOrder.skill,createdAt:new Date().toLocaleString('zh-CN',{hour12:false}).slice(0,16),description:newOrder.desc,logs:[{time:'刚刚',action:'创建工单',operator:currentUser.value.realName,remark:''}]});
+      createOrder.value=false;
+      toast(`工单 ${no} 创建成功！`,'success');
+    };
+
+    const confirmOrder=ref(false),confirmRemark=ref('');
+    const openConfirm=(o)=>{confirmOrder.value=o;confirmRemark.value='';};
+    const submitConfirm=(passed)=>{
+      const o=orders.find(x=>x.id===confirmOrder.value.id);
+      if(o){
+        const ws=workshops.find(w=>w.name===o.workshop);
+        const aOnline=ws?ws.confirmerAOnline:true;
+        const actualConfirmer=aOnline?(ws?ws.confirmerA:'赵确认'):(ws?ws.confirmerB:'钱调度');
+        if(passed){
+          o.status='pending_dispatch';
+          o.confirmer=actualConfirmer;
+          o.logs.push({time:'刚刚',action:'确认通过',operator:actualConfirmer,remark:confirmRemark.value+(aOnline?'':'（A角不在场，B角代确认）')});
+          toast(`工单已确认（${actualConfirmer}），进入待派工`,'success');
+        }else{
+          o.status='rejected';
+          o.confirmer=actualConfirmer;
+          o.logs.push({time:'刚刚',action:'已驳回',operator:actualConfirmer,remark:confirmRemark.value+(aOnline?'':'（A角不在场，B角代确认）')});
+          toast('工单已驳回','warning');
+        }
+      }
+      confirmOrder.value=null;
+    };
+
+    const rejectOrder=(o)=>{
+      if(confirm(`确认驳回工单 ${o.orderNo}？`)){
+        o.status='rejected';
+        o.logs.push({time:'刚刚',action:'已驳回',operator:currentUser.value.realName,remark:''});
+        toast('工单已驳回','warning');
+      }
+    };
+
+    const dispatchOrder=ref(null),dispatchMode=ref('direct'),dispatchAssignee=ref('');
+    const repairmen=reactive([
+      {id:1,name:'李维修',skill:3,onDuty:true,team:'总装一班'},
+      {id:2,name:'张师傅',skill:2,onDuty:true,team:'焊装一班'},
+      {id:3,name:'王技工',skill:3,onDuty:false,team:'涂装一班'},
+      {id:4,name:'刘师傅',skill:2,onDuty:true,team:'冲压一班'},
+      {id:5,name:'陈技工',skill:2,onDuty:true,team:'总装二班'},
+      {id:6,name:'周师傅',skill:2,onDuty:true,team:'焊装二班'},
+      {id:7,name:'吴技工',skill:1,onDuty:true,team:'涂装二班'},
+    ]);
+    const openDispatch=(o)=>{dispatchOrder.value=o;dispatchMode.value=o.type==='periodic'?'direct':'grab';dispatchAssignee.value='';};
+    const submitDispatch=()=>{
+      if(dispatchMode.value!=='grab'&&!dispatchAssignee.value){toast('请选择执行人','warning');return;}
+      const o=orders.find(x=>x.id===dispatchOrder.value.id);
+      if(o){
+        if(dispatchMode.value==='grab'){
+          o.status='pending_accept';
+          o.assignee='（抢单中）';
+          o.grabStartTime=Date.now();
+          o.logs.push({time:'刚刚',action:'派工',operator:currentUser.value.realName,remark:'抢单模式，等待维修工抢单'});
+          startGrabTimer(o);
+        }else{
+          o.status='pending_accept';
+          o.assignee=dispatchMode.value==='force'?(dispatchAssignee.value||'强制派单'):dispatchAssignee.value;
+          o.logs.push({time:'刚刚',action:'派工',operator:currentUser.value.realName,remark:`${dispatchMode.value==='force'?'强制派单':'直接派发'} → ${o.assignee}`});
+        }
+      }
+      dispatchOrder.value=null;
+      toast('派工成功！已发送手机强提醒','success');
+    };
+
+    const grabOrder=(o)=>{
+      const t=orders.find(x=>x.id===o.id);
+      if(t){
+        t.status='working';
+        t.assignee=currentUser.value.realName;
+        t.arriveTime='刚刚';
+        if(grabTimers[t.id]){clearInterval(grabTimers[t.id]);delete grabTimers[t.id];}
+        t.logs.push({time:'刚刚',action:'抢单',operator:currentUser.value.realName,remark:''});
+      }
+      toast('接单成功！请尽快到场作业','success');
+    };
+
+    const submitWork=(o)=>{
+      const t=orders.find(x=>x.id===o.id);
+      if(t){
+        t.status='pending_acceptance';
+        t.actualHours=Number(t.plannedHours)*0.8+Math.random()*Number(t.plannedHours)*0.4;
+        t.actualHours=Math.round(t.actualHours*10)/10;
+        t.efficiency=Math.round((Number(t.plannedHours)/t.actualHours)*100)/100;
+        t.efficiency=Math.min(1.2,Math.max(0.5,t.efficiency));
+        t.logs.push({time:'刚刚',action:'提交验收',operator:currentUser.value.realName,remark:`实际工时${t.actualHours}h`});
+      }
+      toast('已提交验收，等待验收人确认','success');
+    };
+
+    const returnOrder=(o)=>{
+      if(confirm(`确认回退工单 ${o.orderNo}？回退后将重新进入待派工状态。`)){
+        const t=orders.find(x=>x.id===o.id);
+        if(t){
+          t.status='pending_dispatch';
+          t.assignee='';
+          t.logs.push({time:'刚刚',action:'回退',operator:currentUser.value.realName,remark:''});
+        }
+        toast('工单已回退','warning');
+      }
+    };
+
+    const postponeOrder=ref(null),postponeTarget=ref(''),postponeReason=ref('');
+    const openPostpone=(o)=>{postponeOrder.value=o;postponeTarget.value='';postponeReason.value='';};
+    const submitPostpone=()=>{
+      if(!postponeTarget.value){toast('请选择延期时间','warning');return;}
+      if(postponeReason.value.length<10){toast('延后理由至少10字','warning');return;}
+      const o=orders.find(x=>x.id===postponeOrder.value.id);
+      if(o){
+        o.status='postponed';
+        o.logs.push({time:'刚刚',action:'延后',operator:currentUser.value.realName,remark:`延期至${postponeTarget.value}，理由：${postponeReason.value}`});
+      }
+      postponeOrder.value=null;
+      toast('延后申请已提交，等待审批','success');
+    };
+
+    const acceptanceOrder=ref(null),acceptResult=ref('pass'),acceptRemark=ref('');
+    const openAcceptance=(o)=>{acceptanceOrder.value=o;acceptResult.value='pass';acceptRemark.value='';};
+    const submitAcceptance=()=>{
+      const o=orders.find(x=>x.id===acceptanceOrder.value.id);
+      if(o){
+        if(acceptResult.value==='pass'){
+          o.status='closed';
+          o.closeTime='刚刚';
+          o.logs.push({time:'刚刚',action:'验收通过',operator:currentUser.value.realName,remark:acceptRemark.value||'合格'});
+          toast('验收通过，工单已闭环！','success');
+        }else{
+          o.status='reworking';
+          o.logs.push({time:'刚刚',action:'验收不通过',operator:currentUser.value.realName,remark:acceptRemark.value||'不合格'});
+          toast('验收不通过，已回退返修','warning');
+        }
+      }
+      acceptanceOrder.value=null;
+    };
+
+    const backfillOrder=()=>{
+      backfillForm.value={type:'emergency',urgency:'urgent',workshop:'',equipmentId:'',skill:'',title:'',faultTime:'',reason:''};
+      backfillTimeError.value='';
+      backfillModal.value=true;
+    };
+    const backfillModal=ref(false);
+    const backfillForm=reactive({type:'emergency',urgency:'urgent',workshop:'',equipmentId:'',skill:'',title:'',faultTime:'',reason:''});
+    const backfillTimeError=ref('');
+
+    const submitBackfill=()=>{
+      if(!backfillForm.title||!backfillForm.reason||!backfillForm.faultTime){toast('请填写必填项','warning');return;}
+      const faultTime=new Date(backfillForm.faultTime).getTime();
+      const now=Date.now();
+      const diffHours=(now-faultTime)/(1000*60*60);
+      if(diffHours>4){backfillTimeError.value='已超过4小时后补时限，无法录入';return;}
+      if(diffHours<0){backfillTimeError.value='故障时间不能晚于当前时间';return;}
+      const equip=equipList.find(e=>e.id==backfillForm.equipmentId);
+      const no='WO-20260918-'+String(orders.length+1).padStart(4,'0');
+      orders.unshift({id:Date.now(),orderNo:no,type:backfillForm.type,urgency:backfillForm.urgency,equipment:equip?.name||'-',title:backfillForm.title,workshop:backfillForm.workshop,assignee:'',status:'pending_dispatch',plannedHours:0,actualHours:0,skillRequired:backfillForm.skill,createdAt:new Date().toLocaleString('zh-CN',{hour12:false}).slice(0,16),description:backfillForm.reason,backfill:true,logs:[{time:'刚刚',action:'后补录入',operator:currentUser.value.realName,remark:`故障时间${backfillForm.faultTime}，原因：${backfillForm.reason}`}]});
+      backfillModal.value=false;
+      toast('后补工单录入成功！');
+    };
+
+    // Transfer to backup
+    const transferOrder=ref(null),transferReason=ref(''),transferRemark=ref('');
+    const openTransfer=(o)=>{transferOrder.value=o;transferReason.value='';transferRemark.value='';};
+    const submitTransfer=()=>{
+      if(!transferReason.value){toast('请选择转副原因','warning');return;}
+      const o=orders.find(x=>x.id===transferOrder.value.id);
+      const ws=workshops.find(w=>w.name===o.workshop);
+      const backup=ws?ws.confirmerB:'';
+      if(o){
+        o.assignee=backup;
+        o.logs.push({time:'刚刚',action:'转副责任人',operator:currentUser.value.realName,remark:`原因：${transferReason.value}${transferRemark.value?'，备注：'+transferRemark.value:''}，新执行人：${backup}`});
+      }
+      transferOrder.value=null;
+      toast(`已转副责任人：${backup}`);
+    };
+
+    // AB角 computed
+    const orderConfirmerA=computed(()=>{const ws=workshops.find(w=>w.name===confirmOrder.value?.workshop);return ws?ws.confirmerA:'赵确认';});
+    const orderConfirmerB=computed(()=>{const ws=workshops.find(w=>w.name===confirmOrder.value?.workshop);return ws?ws.confirmerB:'钱调度';});
+    const orderConfirmerAOnline=computed(()=>{const ws=workshops.find(w=>w.name===confirmOrder.value?.workshop);return ws?ws.confirmerAOnline:true;});
+
+    // Skill-based repairmen filtering
+    const parseSkill=(s)=>{if(!s)return 0;const m=s.match(/L(\d)/);return m?parseInt(m[1]):0;};
+    const eligibleRepairmen=computed(()=>{
+      const required=parseSkill(dispatchOrder.value?.skillRequired);
+      const isUrgent=dispatchOrder.value?.urgency==='urgent';
+      return repairmen.filter(r=>{
+        if(!r.onDuty)return false;
+        if(isUrgent&&r.skill<3)return false;
+        if(required>0&&r.skill<required)return false;
+        return true;
+      });
+    });
+
+    // Available repairmen for create order form
+    const availableRepairmen=computed(()=>{
+      const required=parseSkill(newOrder.skill);
+      const isUrgent=newOrder.urgency==='urgent';
+      return repairmen.filter(r=>{
+        if(!r.onDuty)return false;
+        if(isUrgent&&r.skill<3)return false;
+        if(required>0&&r.skill<required)return false;
+        return true;
+      });
+    });
+
+    // Grab timeout
+    const grabTimeout=ref(15);
+    const grabCountdown=ref(0);
+    const grabStatus=ref('');
+    const grabTimers=reactive({});
+
+    const formatCountdown=(seconds)=>{
+      const m=Math.floor(seconds/60);
+      const s=seconds%60;
+      return `${m}:${s<10?'0':''}${s}`;
+    };
+
+    const startGrabTimer=(order)=>{
+      const ws=workshops.find(w=>w.name===order.workshop);
+      grabTimeout.value=ws?ws.grabTimeout:15;
+      grabCountdown.value=grabTimeout.value*60;
+      grabStatus.value='';
+      if(grabTimers[order.id])clearInterval(grabTimers[order.id]);
+      grabTimers[order.id]=setInterval(()=>{
+        grabCountdown.value--;
+        if(grabCountdown.value<=0){
+          clearInterval(grabTimers[order.id]);
+          if(order.assignee==='（抢单中）'){
+            grabStatus.value='team';
+            order.assignee='（区域班组）';
+            order.logs.push({time:'刚刚',action:'抢单超时',operator:'系统',remark:`${grabTimeout.value}分钟未抢，自动流转至区域班组`});
+            toast(`工单 ${order.orderNo} 已超时流转至区域班组`,'warning');
+          }
+        }
+      },1000);
+    };
+
+    const checkGrabTimeout=(order)=>{
+      if(order.status!=='pending_accept'||order.assignee!=='（抢单中）')return;
+      const ws=workshops.find(w=>w.name===order.workshop);
+      const timeout=ws?ws.grabTimeout:15;
+      if(grabStatus.value==='team'&&order.assignee==='（区域班组）'){
+        const elapsed=grabTimeout.value*60-grabCountdown.value;
+        if(elapsed>=timeout*60*2){
+          grabStatus.value='forced';
+          order.status='pending_dispatch';
+          order.assignee='';
+          order.logs.push({time:'刚刚',action:'强制派单',operator:'系统',remark:`超时${timeout*2}分钟，调度员强制派单`});
+          toast(`工单 ${order.orderNo} 已强制派单`,'warning');
+        }
+      }
+    };
+
+    const exportData=()=>toast('数据导出中，请稍候...','info');
+
+    const efficiencyColor=(e)=>{
+      if(!e)return 'inherit';
+      if(e>=1)return 'var(--success)';
+      if(e>=0.8)return 'var(--primary)';
+      return 'var(--danger)';
+    };
+
+    // ===== Lifecycle =====
+    onMounted(()=>{setTimeout(initCharts,500);});
+    onUnmounted(()=>{chartInstances.forEach(c=>{try{c.dispose();}catch(e){}});});
+
+    return {
+      // Login
+      loggedIn,loginRole,loginName,currentUser,roleLabel,doLogin,
+      // Toast
+      toasts,
+      // Notif
+      showNotif,unreadNotif,
+      // Menus
+      menuFilter,activeMenu,menus,filteredMenus,toggleMenu,goPage,currentMenuName,
+      // Tabs
+      openTabs,activeTab,openTab,closeTab,configSub,
+      // Permissions
+      canCreate,canDispatch,canConfirm,canVerify,canEditConfig,canDetail,
+      // Dashboard
+      dash,rankings,equipTop,trendChart,typeChart,costChart,radarChart,
+      // Drill
+      drillTitle,drillOrders,drillFilter,filteredDrillOrders,goDrill,searchDrill,
+      // Orders
+      filters,orders,filteredOrders,pendingCount,pageNum,pageSize,pageTotal,pageList,pagedOrders,resetFilters,
+      typeLabel,typeColor,statusLabel,statusColor,urgencyLabel,stateClass,statusMap:statusMapReactive,
+      checkAll,selectedOrders,toggleCheckAll,toggleOrder,
+      // Equipment
+      equipFilter,equipList,filteredEquipList,repairingCount,searchEquip,resetEquipFilter,
+      equipDetail,equipStatusLabel,equipStatusColor,openEquipDetail,scanQRCode,scrapEquip,printQRCode,
+      // KB
+      kbQuery,kbCategory,kbModel,kbResults,searchKB,importDoc,addKnowledge,batchImport,
+      // PM
+      pmModal,pmForm,pmTemplates,openPMModal,submitPM,batchGeneratePM,previewPM,togglePM,cycleLabel,
+      // Performance
+      performanceList,levelText,perfDimensions,perfWeightSum,perfGrades,
+      // Config
+      roles,roleModal,roleForm,openRoleModal,deleteRole,
+      currentRoleId,currentRoleName,permissionModules,hasPerm,togglePermission,savePermission,
+      users,userModal,userForm,userFilter,filteredUsers,openUserModal,resetUserFilter,
+      workshops,currentConfirmerA,currentConfirmerB,openWorkshopModal,openEquipModal,equipModal,equipForm,submitEquip,
+      // Order Ops
+      detailOrder,openDetail,
+      createOrder,newOrder,equipLineByWorkshop,selectedEquip,openCreate,submitCreate,
+      confirmOrder,confirmRemark,openConfirm,submitConfirm,rejectOrder,
+      dispatchOrder,dispatchMode,dispatchAssignee,repairmen,openDispatch,submitDispatch,
+      grabOrder,submitWork,returnOrder,
+      postponeOrder,postponeTarget,postponeReason,openPostpone,submitPostpone,
+      acceptanceOrder,acceptResult,acceptRemark,openAcceptance,submitAcceptance,
+      backfillOrder,backfillModal,backfillForm,backfillTimeError,submitBackfill,
+      transferOrder,transferReason,transferRemark,openTransfer,submitTransfer,
+      orderConfirmerA,orderConfirmerB,orderConfirmerAOnline,
+      eligibleRepairmen,availableRepairmen,parseSkill,
+      grabTimeout,grabCountdown,grabStatus,grabTimers,startGrabTimer,checkGrabTimeout,formatCountdown,
+      exportData,efficiencyColor,toast,initCharts,hasPerm,
+    };
+  },
+}).mount('#app');
+</script>
+</body>
+</html>

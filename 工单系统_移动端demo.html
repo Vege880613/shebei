@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>工单系统 - 移动端</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+:root{--primary:#1677bb;--primary-light:#4aa0dc;--primary-dark:#0f5f9c;--bg:#f0f2f5;--text:#333;--text-sec:#666;--text-tri:#999;--border:#e5e8ed;--success:#52c41a;--danger:#e64545;--warning:#fa8c16;--radius:8px;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;font-size:14px;color:var(--text);background:var(--bg);overflow:hidden;height:100vh;}
+[v-cloak]{display:none;}
+::-webkit-scrollbar{width:0;height:0;}
+/* App Frame */
+.mobile-app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;background:var(--bg);position:relative;overflow:hidden;}
+/* Top Bar */
+.mobile-topbar{height:48px;background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;flex-shrink:0;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+.mobile-topbar .back-btn{position:absolute;left:12px;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background .15s;}
+.mobile-topbar .back-btn:hover{background:rgba(255,255,255,.15);}
+.mobile-topbar .header-actions{position:absolute;right:12px;display:flex;gap:8px;}
+.mobile-topbar .header-actions span{cursor:pointer;font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+/* Content */
+.mobile-content{flex:1;overflow-y:auto;padding:12px;padding-bottom:60px;}
+/* Bottom Tab Bar */
+.mobile-tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:56px;background:#fff;display:flex;border-top:1px solid var(--border);z-index:100;box-shadow:0 -2px 10px rgba(0,0,0,.06);}
+.tabbar-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--text-tri);transition:color .15s;font-size:11px;}
+.tabbar-item.active{color:var(--primary);}
+.tabbar-item .icon{font-size:20px;}
+/* Cards */
+.m-card{background:#fff;border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.m-card-title{font-size:14px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+/* Stats Grid */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.stat-item{background:#fff;border-radius:var(--radius);padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.stat-item .value{font-size:26px;font-weight:700;line-height:1;color:var(--primary);}
+.stat-item .value.red{color:var(--danger);}
+.stat-item .value.green{color:var(--success);}
+.stat-item .value.orange{color:var(--warning);}
+.stat-item .label{font-size:12px;color:var(--text-tri);margin-top:4px;}
+/* Search Bar */
+.m-search{background:#fff;border-radius:20px;padding:8px 14px;display:flex;align-items:center;gap:8px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.m-search input{border:none;outline:none;flex:1;font-size:14px;background:transparent;}
+/* Order List */
+.order-item{background:#fff;border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.order-item .top-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.order-item .order-no{font-weight:600;font-size:13px;color:var(--primary);}
+.order-item .tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;line-height:1.4;}
+.order-item .tag-blue{background:#e6f7ff;color:#1677bb;}
+.order-item .tag-orange{background:#fff7e6;color:#fa8c16;}
+.order-item .tag-red{background:#fff1f0;color:#e64545;}
+.order-item .tag-green{background:#f6ffed;color:#52c41a;}
+.order-item .tag-cyan{background:#e6fffb;color:#13c2c2;}
+.order-item .tag-purple{background:#f9f0ff;color:#722ed1;}
+.order-item .tag-gray{background:#f5f5f5;color:#999;}
+.order-item .middle-row{font-size:13px;color:var(--text-sec);margin-bottom:4px;line-height:1.5;}
+.order-item .bottom-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-tri);}
+.order-item .actions{display:flex;gap:6px;margin-top:8px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--border);background:#fff;color:var(--text);cursor:pointer;font-size:12px;transition:all .15s;}
+.btn:active{opacity:.7;}
+.btn-primary{background:var(--primary-light);border-color:var(--primary-light);color:#fff;}
+.btn-danger{background:var(--danger);border-color:var(--danger);color:#fff;}
+.btn-success{background:var(--success);border-color:var(--success);color:#fff;}
+.btn-sm{height:26px;padding:0 10px;font-size:11px;border-radius:13px;}
+/* Modal */
+.m-modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s;}
+.m-modal{background:#fff;border-radius:12px 12px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;animation:slideUp .3s;}
+.m-modal-header{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;}
+.m-modal-header h3{font-size:16px;font-weight:600;flex:1;}
+.m-modal-body{padding:16px;}
+.m-modal-footer{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:10px;}
+.m-modal-footer .btn{flex:1;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+/* Form */
+.m-form-group{margin-bottom:14px;}
+.m-form-group label{font-size:13px;color:var(--text-sec);display:block;margin-bottom:6px;}
+.m-form-group .req{color:var(--danger);}
+.m-form-control{width:100%;height:40px;border:1px solid var(--border);border-radius:6px;padding:0 10px;font-size:14px;outline:none;background:#fff;}
+.m-form-control:focus{border-color:var(--primary-light);}
+textarea.m-form-control{height:80px;resize:vertical;padding:8px 10px;font-family:inherit;}
+select.m-form-control{appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E") no-repeat right 10px center;}
+/* Floating Action Button */
+.fab{position:fixed;bottom:70px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--primary-light);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 4px 12px rgba(22,119,187,.35);cursor:pointer;z-index:50;transition:transform .15s;}
+.fab:active{transform:scale(.9);}
+/* Toast */
+.m-toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;z-index:999;animation:fadeIn .2s;max-width:80%;text-align:center;}
+/* Login Page */
+.login-page{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;background:linear-gradient(160deg,#0f5f9c 0%,#1677bb 50%,#4aa0dc 100%);}
+.login-page .logo{text-align:center;color:#fff;margin-bottom:36px;}
+.login-page .logo h1{font-size:24px;font-weight:700;letter-spacing:1px;}
+.login-page .logo .sub{font-size:13px;opacity:.8;margin-top:6px;}
+.login-card{background:#fff;border-radius:12px;padding:24px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.2);}
+.role-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
+.role-item{border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .15s;}
+.role-item.selected{border-color:var(--primary-light);background:#e6f7ff;}
+.role-item .rname{font-weight:600;font-size:13px;}
+.role-item .rdesc{font-size:11px;color:var(--text-tri);margin-top:2px;}
+.login-field{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;font-size:14px;}
+.login-field input{border:none;outline:none;flex:1;font-size:14px;}
+.login-field .label{color:var(--text-sec);white-space:nowrap;font-size:13px;}
+/* KB Result */
+.kb-item{padding:14px 0;border-bottom:1px solid var(--border);}
+.kb-item:last-child{border-bottom:none;}
+.kb-item .kb-title{font-weight:600;font-size:14px;margin-bottom:6px;}
+.kb-item .kb-content{font-size:13px;color:var(--text-sec);line-height:1.6;}
+.kb-item .kb-meta{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12px;color:var(--text-tri);}
+/* Empty State */
+.empty-state{padding:60px 20px;text-align:center;color:var(--text-tri);}
+.empty-state .icon{font-size:48px;margin-bottom:12px;}
+.empty-state .text{font-size:14px;}
+/* QR Code Placeholder */
+.qr-placeholder{width:120px;height:120px;background:#f5f5f5;border:2px dashed #ddd;border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:var(--text-tri);font-size:12px;}
+/* Section Header */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:13px;color:var(--text-tri);}
+/* Progress Steps */
+.progress-steps{display:flex;align-items:center;margin:12px 0;}
+.step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+.step .dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#e8e8e8;color:#999;z-index:1;}
+.step.active .dot{background:var(--primary-light);color:#fff;}
+.step.done .dot{background:#52c41a;color:#fff;}
+.step .step-label{font-size:10px;color:var(--text-tri);margin-top:4px;text-align:center;}
+.step:not(:last-child)::after{content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;background:#e8e8e8;z-index:0;}
+.step.done:not(:last-child)::after{background:#52c41a;}
+/* Info List */
+.info-list .info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f5f5f5;font-size:13px;}
+.info-list .info-row:last-child{border-bottom:none;}
+.info-list .info-row .label{color:var(--text-tri);}
+.info-list .info-row .value{font-weight:500;}
+/* Scan Page */
+.scan-page{position:fixed;inset:0;background:#000;z-index:300;display:flex;flex-direction:column;max-width:480px;margin:0 auto;}
+.scan-header{height:48px;background:rgba(0,0,0,.7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;flex-shrink:0;position:relative;}
+.scan-header .close-scan{position:absolute;left:12px;font-size:24px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;}
+.scan-viewfinder{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.scan-viewfinder .viewfinder-box{width:240px;height:240px;border:2px solid rgba(255,255,255,.6);border-radius:12px;position:relative;}
+.scan-viewfinder .viewfinder-box::before,.scan-viewfinder .viewfinder-box::after{content:'';position:absolute;width:20px;height:20px;border-color:#fff;border-style:solid;}
+.scan-viewfinder .viewfinder-box::before{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:8px 0 0 0;}
+.scan-viewfinder .viewfinder-box::after{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 8px 0;}
+.scan-viewfinder .scan-line{position:absolute;top:0;left:0;width:100%;height:2px;background:var(--primary-light);box-shadow:0 0 8px var(--primary-light);animation:scanMove 2s linear infinite;}
+@keyframes scanMove{0%{top:0;}50%{top:calc(100% - 2px);}100%{top:0;}}
+.scan-footer{padding:20px;text-align:center;color:rgba(255,255,255,.7);font-size:13px;}
+.scan-footer .scan-btn{display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:var(--primary-light);color:#fff;font-size:28px;margin:12px auto;cursor:pointer;box-shadow:0 4px 16px rgba(22,119,187,.4);transition:transform .15s;}
+.scan-footer .scan-btn:active{transform:scale(.9);}
+/* GPS Status */
+.gps-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;}
+.gps-status.success{background:#f6ffed;border:1px solid #b7eb8f;color:#52c41a;}
+.gps-status.error{background:#fff1f0;border:1px solid #ffa39e;color:#e64545;}
+.gps-status.pending{background:#fffbe6;border:1px solid #ffe58f;color:#d46b08;}
+.gps-status .icon{font-size:18px;}
+/* Work Action Buttons */
+.work-actions{display:flex;gap:10px;margin-top:12px;}
+.work-actions .btn{flex:1;}
+/* Timeline */
+.timeline{position:relative;padding-left:20px;margin-top:12px;}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:#e8e8e8;}
+.timeline-item{position:relative;padding-bottom:16px;}
+.timeline-item:last-child{padding-bottom:0;}
+.timeline-item::before{content:'';position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;background:#e8e8e8;border:2px solid #fff;}
+.timeline-item.done::before{background:#52c41a;}
+.timeline-item.active::before{background:var(--primary-light);box-shadow:0 0 0 3px rgba(22,119,187,.2);}
+.timeline-item .t-time{font-size:11px;color:var(--text-tri);}
+.timeline-item .t-action{font-size:13px;font-weight:500;margin-top:2px;}
+.timeline-item .t-operator{font-size:12px;color:var(--text-sec);}
+/* Fence Info */
+.fence-info{display:flex;align-items:center;gap:10px;padding:12px;background:#e6fffb;border:1px solid #87e8de;border-radius:8px;margin-top:12px;font-size:12px;color:var(--text-sec);}
+.fence-info .icon{font-size:20px;}
+/* Notification Badge */
+.notif-badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:600;}
+/* Quick Scan Card */
+.scan-card{background:#fff;border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .15s;}
+.scan-card:active{transform:scale(.98);}
+.scan-card .scan-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1677bb,#4aa0dc);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.scan-card .scan-text{flex:1;}
+.scan-card .scan-text .title{font-weight:600;font-size:14px;}
+.scan-card .scan-text .desc{font-size:12px;color:var(--text-tri);margin-top:2px;}
+.scan-card .arrow{color:var(--text-tri);font-size:18px;}
+/* Dev Tag */
+.dev-tag{position:fixed;bottom:70px;left:10px;z-index:9999;cursor:move;user-select:none;}
+.dev-tag-toggle{width:36px;height:36px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:grab;}
+.dev-tag-toggle:active{cursor:grabbing;}
+.dev-tag-panel{position:absolute;bottom:44px;left:0;width:320px;max-height:70vh;overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:12px;font-size:12px;line-height:1.6;}
+.dev-tag-section{margin-bottom:12px;}
+.dev-tag-section-title{font-weight:600;color:var(--primary);margin-bottom:4px;font-size:13px;}
+.dev-tag-section-content{color:var(--text-sec);word-break:break-all;}
+.dev-tag-section-content code{background:#f5f5f5;padding:1px 4px;border-radius:3px;font-family:monospace;font-size:11px;}
+.dev-tag-section-content .tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;margin:2px;}
+.dev-tag-section-content .tag-event{background:#e6f7ff;color:#1677bb;}
+.dev-tag-section-content .tag-field{background:#f6ffed;color:#52c41a;}
+.dev-tag-section-content .tag-action{background:#fff7e6;color:#fa8c16;}
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+  <div class="mobile-app">
+
+    <!-- Login Page -->
+    <template v-if="!loggedIn">
+      <div class="login-page">
+        <div class="logo">
+          <h1>AUMAN 工单系统</h1>
+          <div class="sub">Maintenance Work Order System · Mobile</div>
+        </div>
+        <div class="login-card">
+          <div style="font-size:13px;color:var(--text-tri);margin-bottom:10px;">选择登录角色：</div>
+          <div class="role-grid">
+            <div v-for="r in roleOptions" :key="r.key" class="role-item" :class="{selected:loginRole===r.key}" @click="loginRole=r.key">
+              <div class="rname">{{r.label}}</div>
+              <div class="rdesc">{{r.desc}}</div>
+            </div>
+          </div>
+          <div class="login-field">
+            <span class="label">用户名</span>
+            <input v-model="loginName" placeholder="请输入用户名">
+          </div>
+          <div class="login-field">
+            <span class="label">密&nbsp;&nbsp;&nbsp;码</span>
+            <input type="password" value="123456" readonly>
+          </div>
+          <button class="btn btn-primary" style="width:100%;height:42px;font-size:15px;" @click="doLogin">登&nbsp;&nbsp;录</button>
+        </div>
+      </div>
+    </template>
+
+    <!-- Main App -->
+    <template v-else>
+      <!-- Top Bar -->
+      <div class="mobile-topbar">
+        <span class="back-btn" v-if="showBack" @click="goBack">‹</span>
+        {{pageTitle}}
+        <div class="header-actions">
+          <span @click="showSearch=!showSearch" v-if="activeTab==='order'">🔍</span>
+          <span @click="toast('暂无新通知')">🔔</span>
+          <span @click="loggedIn=false">⏏</span>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="mobile-content">
+
+        <!-- Dashboard -->
+        <div v-if="activeTab==='home'" v-cloak>
+          <!-- User Greeting -->
+          <div class="m-card" style="background:linear-gradient(135deg,#1677bb,#4aa0dc);color:#fff;">
+            <div style="font-size:13px;opacity:.8;">{{timeGreeting}}</div>
+            <div style="font-size:18px;font-weight:600;margin-top:4px;">{{currentUser.realName}} · {{roleLabel}}</div>
+            <div style="font-size:12px;opacity:.7;margin-top:6px;">今日待处理：{{todayPending}} 项</div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-grid">
+            <div class="stat-item" @click="activeTab='order';statusFilter='pending_confirm'">
+              <div class="value orange">{{stats.pendingConfirm}}</div>
+              <div class="label">待确认</div>
+            </div>
+            <div class="stat-item" @click="activeTab='order';statusFilter='pending_dispatch'">
+              <div class="value" style="color:#722ed1;">{{stats.pendingDispatch}}</div>
+              <div class="label">待派工</div>
+            </div>
+            <div class="stat-item" @click="activeTab='order';statusFilter='pending_accept'">
+              <div class="value green">{{stats.pendingAccept}}</div>
+              <div class="label">待接单</div>
+            </div>
+            <div class="stat-item" @click="activeTab='order';statusFilter='pending_acceptance'">
+              <div class="value red">{{stats.pendingVerify}}</div>
+              <div class="label">待验收</div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="m-card">
+            <div class="m-card-title">⚡ 快捷操作</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center;">
+              <div @click="openCreate" style="cursor:pointer;">
+                <div style="width:44px;height:44px;border-radius:12px;background:#e6f7ff;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 6px;">➕</div>
+                <div style="font-size:12px;">新建工单</div>
+              </div>
+              <div @click="startScan('扫码建单',(device,result)=>{if(result.gpsOk){openCreate();newOrder.workshop=device.workshop;newOrder.equipmentId=device.id;newOrder.title=device.name+' - 现场故障';toast('扫码成功，定位范围内 ✓');}else{toast('GPS 校验失败，超出围栏范围');}})" style="cursor:pointer;">
+                <div style="width:44px;height:44px;border-radius:12px;background:#f6ffed;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 6px;">📱</div>
+                <div style="font-size:12px;">扫码建单</div>
+              </div>
+              <div @click="activeTab='order'" style="cursor:pointer;">
+                <div style="width:44px;height:44px;border-radius:12px;background:#fff7e6;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 6px;">📋</div>
+                <div style="font-size:12px;">我的工单</div>
+              </div>
+              <div @click="activeTab='kb'" style="cursor:pointer;">
+                <div style="width:44px;height:44px;border-radius:12px;background:#f9f0ff;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 6px;">🤖</div>
+                <div style="font-size:12px;">AI 查询</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scan Quick Access -->
+          <div class="scan-card" @click="startScan('扫码建单',(device,result)=>{if(result.gpsOk){openCreate();newOrder.workshop=device.workshop;newOrder.equipmentId=device.id;newOrder.title=device.name+' - 现场故障';toast('扫码成功，定位范围内 ✓');}else{toast('GPS 校验失败，超出围栏范围');}})">
+            <div class="scan-icon">📱</div>
+            <div class="scan-text">
+              <div class="title">扫码建单</div>
+              <div class="desc">扫描设备二维码，快速创建工单</div>
+            </div>
+            <span class="arrow">›</span>
+          </div>
+
+          <div class="scan-card" @click="startScan('到达确认',(device,result)=>{
+            if(result.gpsOk){
+              const order=orders.find(o=>o.status==='working'&&o.assignee===currentUser.realName);
+              if(order){openArrivalConfirm(order);toast('请确认到达');}else{toast('暂无待确认到达的工单');}
+            }else{toast('GPS 校验失败，超出围栏范围');}
+          })">
+            <div class="scan-icon" style="background:linear-gradient(135deg,#52c41a,#73d13d);">📍</div>
+            <div class="scan-text">
+              <div class="title">到达确认</div>
+              <div class="desc">GPS 定位确认到场</div>
+            </div>
+            <span class="arrow">›</span>
+          </div>
+
+          <!-- Urgent Orders -->
+          <div class="m-card" v-if="urgentOrders.length">
+            <div class="m-card-title">🚨 紧急工单</div>
+            <div v-for="o in urgentOrders" :key="o.id" class="order-item" style="border-left:3px solid var(--danger);">
+              <div class="top-row">
+                <span class="order-no">{{o.orderNo}}</span>
+                <span class="tag tag-red">紧急</span>
+              </div>
+              <div class="middle-row">{{o.title}}</div>
+              <div class="bottom-row">
+                <span>{{o.workshop}}</span>
+                <span :style="{color:'var(--danger)'}">{{statusLabel(o.status)}}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Equipment Alert -->
+          <div class="m-card" v-if="repairingEquips.length">
+            <div class="m-card-title">⚠️ 维修中设备</div>
+            <div v-for="e in repairingEquips" :key="e.id" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+              <div>
+                <div style="font-weight:500;font-size:13px;">{{e.name}}</div>
+                <div style="font-size:11px;color:var(--text-tri);">{{e.workshop}} · {{e.location}}</div>
+              </div>
+              <span class="tag tag-red">维修中</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order List (Mobile) -->
+        <div v-if="activeTab==='order'" v-cloak>
+          <!-- Search Bar -->
+          <div class="m-search" v-if="showSearch">
+            <span>🔍</span>
+            <input v-model="searchQuery" placeholder="搜索工单编号、标题...">
+            <span @click="showSearch=false;searchQuery=''" style="cursor:pointer;">✕</span>
+          </div>
+
+          <!-- Status Filter -->
+          <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;">
+            <span v-for="s in statusFilters" :key="s.key" @click="statusFilter=s.key" class="tag" :class="statusFilter===s.key?'tag-blue':'tag-gray'" style="white-space:nowrap;flex-shrink:0;">{{s.label}}</span>
+          </div>
+
+          <!-- Order Cards -->
+          <div v-for="o in mobileFilteredOrders" :key="o.id" class="order-item" @click="openDetail(o)">
+            <div class="top-row">
+              <span class="order-no">{{o.orderNo}}</span>
+              <span class="tag" :class="typeColor(o.type)">{{typeLabel(o.type)}}</span>
+              <span class="tag" :class="statusColor(o.status)">{{statusLabel(o.status)}}</span>
+            </div>
+            <div class="middle-row">{{o.title}}</div>
+            <div class="bottom-row" style="margin-top:6px;">
+              <span>🏭 {{o.workshop}}</span>
+              <span v-if="o.assignee">👤 {{o.assignee}}</span>
+              <span v-else style="color:var(--warning);">未分配</span>
+            </div>
+            <div class="actions">
+              <button v-if="o.status==='pending_accept'&&loginRole==='repairman'" class="btn btn-primary btn-sm" @click.stop="grabOrder(o)">抢单</button>
+              <button v-if="o.status==='working'&&o.assignee===currentUser.realName" class="btn btn-success btn-sm" @click.stop="submitWork(o)">提交验收</button>
+              <button v-if="o.status==='pending_acceptance'&&canVerify" class="btn btn-primary btn-sm" @click.stop="openAcceptance(o)">验收</button>
+            </div>
+          </div>
+
+          <div v-if="!mobileFilteredOrders.length" class="empty-state">
+            <div class="icon">📋</div>
+            <div class="text">暂无工单数据</div>
+          </div>
+
+          <!-- FAB: New Order -->
+          <div class="fab" @click="openCreate">+</div>
+        </div>
+
+        <!-- Equipment (Mobile) -->
+        <div v-if="activeTab==='equipment'" v-cloak>
+          <div class="m-search">
+            <span>🔍</span>
+            <input v-model="equipQuery" placeholder="搜索设备名称、编码...">
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <span v-for="s in equipFilters" :key="s.key" @click="equipFilter=s.key" class="tag" :class="equipFilter===s.key?'tag-blue':'tag-gray'" style="white-space:nowrap;">{{s.label}}</span>
+          </div>
+
+          <div v-for="e in mobileFilteredEquip" :key="e.id" class="order-item" @click="showEquipDetail(e)">
+            <div class="top-row">
+              <span style="font-weight:600;">{{e.code}}</span>
+              <span class="tag" :class="equipStatusColor(e.status)">{{equipStatusLabel(e.status)}}</span>
+            </div>
+            <div class="middle-row" style="font-weight:600;font-size:14px;color:var(--text);">{{e.name}}</div>
+            <div class="bottom-row" style="margin-top:4px;font-size:11px;">
+              <span>{{e.workshop}}</span>
+              <span>故障 {{e.faultCount}} 次</span>
+              <span>围栏{{e.fenceRadius}}m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Knowledge Base (Mobile) -->
+        <div v-if="activeTab==='kb'" v-cloak>
+          <div class="m-search" style="background:linear-gradient(135deg,#e6f7ff,#f0f9ff);">
+            <span>🤖</span>
+            <input v-model="kbQuery" placeholder="输入故障现象，如：轴承异响...">
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-bottom:14px;" @click="searchKB">AI 查 询</button>
+
+          <div v-if="!kbResults.length" class="empty-state">
+            <div style="font-size:48px;margin-bottom:12px;">🤖</div>
+            <div style="font-weight:600;margin-bottom:8px;">智能故障诊断</div>
+            <div style="font-size:13px;color:var(--text-tri);max-width:300px;">输入故障现象，AI 将综合维保手册、历史案例为您推荐处理方案</div>
+          </div>
+
+          <div v-for="(r,i) in kbResults" :key="i" class="kb-item">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span class="tag" :class="{manual:'tag-blue',case:'tag-orange',guide:'tag-green'}[r.category]">{{r.categoryLabel}}</span>
+              <span style="font-size:12px;color:var(--text-tri);margin-left:auto;">{{r.score}}%</span>
+            </div>
+            <div class="kb-title">{{r.title}}</div>
+            <div class="kb-content" v-html="r.highlight"></div>
+            <div class="kb-meta">
+              <span>{{r.source}}</span>
+              <span>{{r.date}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- My Profile / Performance (Mobile) -->
+        <div v-if="activeTab==='profile'" v-cloak>
+          <div class="m-card" style="text-align:center;padding:24px;">
+            <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#1677bb,#4aa0dc);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;">{{currentUser.realName.slice(0,1)}}</div>
+            <div style="font-size:18px;font-weight:600;">{{currentUser.realName}}</div>
+            <div style="font-size:13px;color:var(--text-tri);">{{roleLabel}}</div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0;display:flex;justify-content:space-around;">
+              <div><div style="font-size:20px;font-weight:700;color:var(--primary);">{{myStats.hours}}</div><div style="font-size:11px;color:var(--text-tri);">本月工时</div></div>
+              <div><div style="font-size:20px;font-weight:700;color:var(--success);">{{myStats.orders}}</div><div style="font-size:11px;color:var(--text-tri);">完成工单</div></div>
+              <div><div style="font-size:20px;font-weight:700;color:var(--warning);">{{myStats.rate}}%</div><div style="font-size:11px;color:var(--text-tri);">合格率</div></div>
+            </div>
+          </div>
+
+          <div class="m-card">
+            <div class="m-card-title">📊 我的绩效</div>
+            <div class="info-list">
+              <div class="info-row"><span class="label">技能等级</span><span class="value">L{{myStats.level}} {{levelText(myStats.level)}}</span></div>
+              <div class="info-row"><span class="label">一次修复率</span><span class="value">{{myStats.firstFix}}%</span></div>
+              <div class="info-row"><span class="label">效率系数</span><span class="value">{{myStats.efficiency}}</span></div>
+              <div class="info-row"><span class="label">绩效评分</span><span class="value" style="color:var(--success);font-weight:700;">{{myStats.grade}}</span></div>
+              <div class="info-row"><span class="label">本月工资</span><span class="value" style="color:var(--primary);">¥{{myStats.salary}}</span></div>
+            </div>
+          </div>
+
+          <div class="m-card">
+            <div class="m-card-title">⚙️ 设置</div>
+            <div class="info-list">
+              <div class="info-row" style="cursor:pointer;" @click="openPasswordModal"><span class="label">修改密码</span><span style="color:var(--text-tri);">›</span></div>
+              <div class="info-row" style="cursor:pointer;" @click="openNotificationModal"><span class="label">通知设置</span><span style="color:var(--text-tri);">›</span></div>
+              <div class="info-row" style="cursor:pointer;" @click="openAboutModal"><span class="label">关于系统</span><span style="color:var(--text-tri);">›</span></div>
+              <div class="info-row" style="cursor:pointer;color:var(--danger);" @click="loggedIn=false"><span class="label">退出登录</span><span style="color:var(--text-tri);">›</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /mobile-content -->
+
+      <!-- Password Change Modal -->
+      <div class="m-modal-mask" v-if="passwordModal" @click.self="passwordModal=false">
+        <div class="m-modal">
+          <div class="m-modal-header">
+            <h3>修改密码</h3>
+            <span style="font-size:22px;cursor:pointer;" @click="passwordModal=false">×</span>
+          </div>
+          <div class="m-modal-body">
+            <div class="m-form-group">
+              <label>当前密码</label>
+              <input class="m-form-control" type="password" v-model="passwordForm.old" placeholder="请输入当前密码">
+            </div>
+            <div class="m-form-group">
+              <label>新密码</label>
+              <input class="m-form-control" type="password" v-model="passwordForm.new" placeholder="请输入新密码（至少6位）">
+            </div>
+            <div class="m-form-group">
+              <label>确认新密码</label>
+              <input class="m-form-control" type="password" v-model="passwordForm.confirm" placeholder="请再次输入新密码">
+            </div>
+            <div v-if="passwordError" style="padding:10px;background:#fff1f0;border:1px solid #ffa39e;border-radius:6px;font-size:13px;color:var(--danger);margin-bottom:12px;">{{passwordError}}</div>
+          </div>
+          <div class="m-modal-footer">
+            <button class="btn" @click="passwordModal=false">取消</button>
+            <button class="btn btn-primary" @click="submitPassword">确认修改</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification Settings Modal -->
+      <div class="m-modal-mask" v-if="notificationModal" @click.self="notificationModal=false">
+        <div class="m-modal">
+          <div class="m-modal-header">
+            <h3>通知设置</h3>
+            <span style="font-size:22px;cursor:pointer;" @click="notificationModal=false">×</span>
+          </div>
+          <div class="m-modal-body">
+            <div class="info-list">
+              <div class="info-row">
+                <span class="label">推送通知</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="checkbox" v-model="notificationSettings.push" style="width:18px;height:18px;accent-color:var(--primary);">
+                  <span style="font-size:12px;color:var(--text-tri);">接收工单推送</span>
+                </label>
+              </div>
+              <div class="info-row">
+                <span class="label">短信提醒</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="checkbox" v-model="notificationSettings.sms" style="width:18px;height:18px;accent-color:var(--primary);">
+                  <span style="font-size:12px;color:var(--text-tri);">接收短信通知</span>
+                </label>
+              </div>
+              <div class="info-row">
+                <span class="label">邮件通知</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="checkbox" v-model="notificationSettings.email" style="width:18px;height:18px;accent-color:var(--primary);">
+                  <span style="font-size:12px;color:var(--text-tri);">接收邮件通知</span>
+                </label>
+              </div>
+              <div class="info-row">
+                <span class="label">强提醒铃声</span>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input type="checkbox" v-model="notificationSettings.ringtone" style="width:18px;height:18px;accent-color:var(--primary);">
+                  <span style="font-size:12px;color:var(--text-tri);">紧急工单强提醒</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="m-modal-footer">
+            <button class="btn" @click="notificationModal=false">取消</button>
+            <button class="btn btn-primary" @click="saveNotificationSettings">保存设置</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- About System Modal -->
+      <div class="m-modal-mask" v-if="aboutModal" @click.self="aboutModal=false">
+        <div class="m-modal">
+          <div class="m-modal-header">
+            <h3>关于系统</h3>
+            <span style="font-size:22px;cursor:pointer;" @click="aboutModal=false">×</span>
+          </div>
+          <div class="m-modal-body" style="text-align:center;">
+            <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#1677bb,#4aa0dc);color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 16px;">🔧</div>
+            <div style="font-size:18px;font-weight:700;color:var(--text);">设备维护保养工单管理系统</div>
+            <div style="font-size:13px;color:var(--text-tri);margin-top:4px;">Maintenance Work Order Management System</div>
+            <div style="margin-top:20px;padding:16px;background:#f5f5f5;border-radius:8px;text-align:left;">
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e8e8e8;"><span style="color:var(--text-tri);">系统版本</span><span style="font-weight:500;">v2.0.0</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e8e8e8;"><span style="color:var(--text-tri);">前端框架</span><span style="font-weight:500;">Vue 3 + ECharts</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e8e8e8;"><span style="color:var(--text-tri);">数据存储</span><span style="font-weight:500;">内存（Demo模式）</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;"><span style="color:var(--text-tri);">开发日期</span><span style="font-weight:500;">2026-09-18</span></div>
+            </div>
+            <div style="margin-top:16px;font-size:12px;color:var(--text-tri);line-height:1.8;">
+              <p>© 2026 AUMAN 工单系统</p>
+              <p>技术支持：设备管理部</p>
+              <p>联系电话：400-XXX-XXXX</p>
+            </div>
+          </div>
+          <div class="m-modal-footer">
+            <button class="btn btn-primary" @click="aboutModal=false">关&nbsp;闭</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Tab Bar -->
+      <div class="mobile-tabbar">
+        <div class="tabbar-item" :class="{active:activeTab==='home'}" @click="activeTab='home'">
+          <span class="icon">🏠</span><span>首页</span>
+        </div>
+        <div class="tabbar-item" :class="{active:activeTab==='order'}" @click="activeTab='order'">
+          <span class="icon">📋</span><span>工单</span>
+        </div>
+        <div class="tabbar-item" :class="{active:activeTab==='equipment'}" @click="activeTab='equipment'">
+          <span class="icon">🏭</span><span>设备</span>
+        </div>
+        <div class="tabbar-item" :class="{active:activeTab==='kb'}" @click="activeTab='kb'">
+          <span class="icon">🤖</span><span>知识库</span>
+        </div>
+        <div class="tabbar-item" :class="{active:activeTab==='profile'}" @click="activeTab='profile'">
+          <span class="icon">👤</span><span>我的</span>
+        </div>
+      </div>
+    </template>
+
+    <!-- Create Order Modal -->
+    <div class="m-modal-mask" v-if="createOrder" @click.self="createOrder=false">
+      <div class="m-modal">
+        <div class="m-modal-header">
+          <h3>新建工单</h3>
+          <span style="font-size:22px;cursor:pointer;" @click="createOrder=false">×</span>
+        </div>
+        <div class="m-modal-body">
+          <div class="m-form-group">
+            <label><span class="req">*</span> 工单类型</label>
+            <select class="m-form-control" v-model="newOrder.type">
+              <option value="periodic">周期性维护</option>
+              <option value="temporary">临时任务</option>
+              <option value="emergency">紧急故障</option>
+            </select>
+          </div>
+          <div class="m-form-group">
+            <label><span class="req">*</span> 所属车间</label>
+            <select class="m-form-control" v-model="newOrder.workshop" @change="newOrder.equipmentId=''">
+              <option value="">请选择</option>
+              <option v-for="w in workshops" :key="w.id" :value="w.name">{{w.name}}</option>
+            </select>
+          </div>
+          <div class="m-form-group">
+            <label><span class="req">*</span> 设备名称</label>
+            <select class="m-form-control" v-model="newOrder.equipmentId" :disabled="!newOrder.workshop">
+              <option value="">{{newOrder.workshop?'请选择设备':'请先选车间'}}</option>
+              <option v-for="e in equipByWs(newOrder.workshop)" :key="e.id" :value="e.id">{{e.code}} — {{e.name}}</option>
+            </select>
+          </div>
+          <div class="m-form-group">
+            <label><span class="req">*</span> 工单标题</label>
+            <input class="m-form-control" v-model="newOrder.title" placeholder="请输入标题">
+          </div>
+          <div class="m-form-group">
+            <label><span class="req">*</span> 任务描述</label>
+            <textarea class="m-form-control" v-model="newOrder.desc" placeholder="请详细描述"></textarea>
+          </div>
+        </div>
+        <div class="m-modal-footer">
+          <button class="btn" @click="createOrder=false">取消</button>
+          <button class="btn btn-primary" @click="submitCreate">提交</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div class="m-modal-mask" v-if="detailOrder" @click.self="detailOrder=null">
+      <div class="m-modal">
+        <div class="m-modal-header">
+          <h3>工单详情</h3>
+          <span style="font-size:22px;cursor:pointer;" @click="detailOrder=null">×</span>
+        </div>
+        <div class="m-modal-body">
+          <!-- Progress Steps -->
+          <div class="progress-steps">
+            <div class="step" :class="stepClass('pending_confirm')"><div class="dot">✓</div><div class="step-label">待确认</div></div>
+            <div class="step" :class="stepClass('pending_dispatch')"><div class="dot">✓</div><div class="step-label">待派工</div></div>
+            <div class="step" :class="stepClass('pending_accept')"><div class="dot">✓</div><div class="step-label">待接单</div></div>
+            <div class="step" :class="stepClass('working')"><div class="dot">✓</div><div class="step-label">作业中</div></div>
+            <div class="step" :class="stepClass('pending_acceptance')"><div class="dot">✓</div><div class="step-label">待验收</div></div>
+            <div class="step" :class="stepClass('closed')"><div class="dot">✓</div><div class="step-label">已关闭</div></div>
+          </div>
+
+          <div class="info-list">
+            <div class="info-row"><span class="label">工单编号</span><span class="value">{{detailOrder.orderNo}}</span></div>
+            <div class="info-row"><span class="label">类型</span><span class="value">{{typeLabel(detailOrder.type)}}</span></div>
+            <div class="info-row"><span class="label">状态</span><span class="value">{{statusLabel(detailOrder.status)}}</span></div>
+            <div class="info-row"><span class="label">车间</span><span class="value">{{detailOrder.workshop}}</span></div>
+            <div class="info-row"><span class="label">设备</span><span class="value">{{detailOrder.equipment||'-'}}</span></div>
+            <div class="info-row"><span class="label">执行人</span><span class="value">{{detailOrder.assignee||'未分配'}}</span></div>
+            <div class="info-row"><span class="label">标准工时</span><span class="value">{{detailOrder.plannedHours||'-'}}h</span></div>
+            <div class="info-row"><span class="label">实际工时</span><span class="value">{{detailOrder.actualHours?detailOrder.actualHours+'h':'-'}}</span></div>
+          </div>
+
+          <div style="margin-top:14px;padding:12px;background:#f5f5f5;border-radius:6px;font-size:13px;color:var(--text-sec);line-height:1.6;">
+            {{detailOrder.description}}
+          </div>
+
+          <!-- Logs -->
+          <div style="margin-top:16px;">
+            <div style="font-weight:600;margin-bottom:8px;">操作日志</div>
+            <div v-for="(l,i) in detailOrder.logs" :key="i" style="padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:12px;">
+              <div style="color:var(--text-tri);">{{l.time}}</div>
+              <div style="margin-top:2px;">{{l.action}} · {{l.operator}}</div>
+            </div>
+          </div>
+        </div>
+        <div class="m-modal-footer">
+          <button class="btn" @click="detailOrder=null">关闭</button>
+          <button v-if="detailOrder.status==='pending_accept'&&loginRole==='repairman'" class="btn btn-primary" @click="grabOrder(detailOrder);detailOrder=null">抢单</button>
+          <button v-if="detailOrder.status==='working'&&detailOrder.assignee===currentUser.realName" class="btn btn-success" @click="submitWork(detailOrder);detailOrder=null">提交验收</button>
+          <button v-if="detailOrder.status==='working'&&detailOrder.assignee===currentUser.realName&&!detailOrder.arriveTime" class="btn btn-primary" @click="openArrivalConfirm(detailOrder);detailOrder=null">到达确认</button>
+          <button v-if="detailOrder.status==='working'&&detailOrder.assignee===currentUser.realName&&detailOrder.arriveTime" class="btn btn-primary" @click="openRepairScan(detailOrder);detailOrder=null">扫码维修</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acceptance Modal -->
+    <div class="m-modal-mask" v-if="acceptanceOrder" @click.self="acceptanceOrder=null">
+      <div class="m-modal">
+        <div class="m-modal-header">
+          <h3>工单验收</h3>
+          <span style="font-size:22px;cursor:pointer;" @click="acceptanceOrder=null">×</span>
+        </div>
+        <div class="m-modal-body">
+          <div class="info-list" style="margin-bottom:16px;">
+            <div class="info-row"><span class="label">工单</span><span class="value">{{acceptanceOrder.title}}</span></div>
+            <div class="info-row"><span class="label">执行人</span><span class="value">{{acceptanceOrder.assignee}}</span></div>
+            <div class="info-row"><span class="label">标准工时</span><span class="value">{{acceptanceOrder.plannedHours}}h</span></div>
+            <div class="info-row"><span class="label">实际工时</span><span class="value">{{acceptanceOrder.actualHours}}h</span></div>
+          </div>
+          <div class="m-form-group">
+            <label>验收结果</label>
+            <div style="display:flex;gap:12px;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" v-model="acceptResult" value="pass"> 合格</label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" v-model="acceptResult" value="fail"> 不合格</label>
+            </div>
+          </div>
+          <div class="m-form-group">
+            <label>验收备注</label>
+            <textarea class="m-form-control" v-model="acceptRemark" placeholder="请输入验收备注"></textarea>
+          </div>
+        </div>
+        <div class="m-modal-footer">
+          <button class="btn" @click="acceptanceOrder=null">取消</button>
+          <button v-if="acceptResult==='pass'" class="btn btn-success" @click="submitAcceptance">确认通过</button>
+          <button v-else class="btn btn-danger" @click="submitAcceptance">不通过</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Equipment Detail Modal -->
+    <div class="m-modal-mask" v-if="equipDetail" @click.self="equipDetail=null">
+      <div class="m-modal">
+        <div class="m-modal-header">
+          <h3>设备详情</h3>
+          <span style="font-size:22px;cursor:pointer;" @click="equipDetail=null">×</span>
+        </div>
+        <div class="m-modal-body">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div class="qr-placeholder">📱<br>设备二维码</div>
+            <div style="font-weight:600;font-size:16px;">{{equipDetail.name}}</div>
+            <div style="font-size:13px;color:var(--text-tri);">{{equipDetail.code}}</div>
+          </div>
+          <div class="info-list">
+            <div class="info-row"><span class="label">型号</span><span class="value">{{equipDetail.model}}</span></div>
+            <div class="info-row"><span class="label">车间</span><span class="value">{{equipDetail.workshop}}</span></div>
+            <div class="info-row"><span class="label">位置</span><span class="value">{{equipDetail.location}}</span></div>
+            <div class="info-row"><span class="label">状态</span><span class="value">{{equipStatusLabel(equipDetail.status)}}</span></div>
+            <div class="info-row"><span class="label">电子围栏</span><span class="value">{{equipDetail.fenceRadius}}m</span></div>
+            <div class="info-row"><span class="label">GPS</span><span class="value">{{equipDetail.lng}}, {{equipDetail.lat}}</span></div>
+            <div class="info-row"><span class="label">累计故障</span><span class="value">{{equipDetail.faultCount}} 次</span></div>
+            <div class="info-row"><span class="label">MTBF</span><span class="value">{{equipDetail.mtbf}}h</span></div>
+            <div class="info-row"><span class="label">MTTR</span><span class="value">{{equipDetail.mttr}}h</span></div>
+          </div>
+          <div class="fence-info">
+            <span class="icon">📍</span>
+            <div>
+              <div style="font-weight:500;">电子围栏校验</div>
+              <div style="margin-top:2px;">扫码到场/闭环时自动校验 GPS 是否在围栏范围内（半径{{equipDetail.fenceRadius}}米）</div>
+            </div>
+          </div>
+        </div>
+        <div class="m-modal-footer">
+          <button class="btn" @click="equipDetail=null">关闭</button>
+          <button class="btn btn-primary" @click="startScanForEquip(equipDetail)">扫码</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scan Page (Full Screen) -->
+    <div class="scan-page" v-if="scanMode" v-cloak>
+      <div class="scan-header">
+        <span class="close-scan" @click="closeScan">×</span>
+        {{scanTitle}}
+      </div>
+      <div class="scan-viewfinder">
+        <div class="viewfinder-box">
+          <div class="scan-line"></div>
+        </div>
+      </div>
+      <div class="scan-footer">
+        <div style="margin-bottom:8px;">将二维码放入框内，即可自动扫描</div>
+        <div class="scan-btn" @click="simulateScan">📷</div>
+        <div style="margin-top:8px;font-size:12px;opacity:.6;">点击按钮模拟扫码</div>
+      </div>
+    </div>
+
+    <!-- Arrival Confirm Modal -->
+    <div class="m-modal-mask" v-if="arrivalOrder" @click.self="arrivalOrder=null">
+      <div class="m-modal">
+        <div class="m-modal-header">
+          <h3>到达确认</h3>
+          <span style="font-size:22px;cursor:pointer;" @click="arrivalOrder=null">×</span>
+        </div>
+        <div class="m-modal-body">
+          <div class="gps-status" :class="gpsCheckResult">
+            <span class="icon">{{gpsCheckResult==='success'?'✅':gpsCheckResult==='error'?'❌':'⏳'}}</span>
+            <div>
+              <div style="font-weight:500;">{{gpsCheckResult==='success'?'GPS 校验通过':gpsCheckResult==='error'?'GPS 校验失败':'正在获取 GPS 位置...'}}</div>
+              <div style="font-size:12px;margin-top:2px;" v-if="gpsCheckResult==='success'">当前位置在电子围栏范围内</div>
+              <div style="font-size:12px;margin-top:2px;" v-if="gpsCheckResult==='error'">当前位置超出电子围栏范围，无法确认到场</div>
+            </div>
+          </div>
+          <div class="info-list" style="margin-top:12px;">
+            <div class="info-row"><span class="label">工单</span><span class="value">{{arrivalOrder.title}}</span></div>
+            <div class="info-row"><span class="label">设备</span><span class="value">{{arrivalOrder.equipment||'-'}}</span></div>
+            <div class="info-row"><span class="label">围栏半径</span><span class="value">{{arrivalOrder.fenceRadius||50}}m</span></div>
+            <div class="info-row"><span class="label">当前距离</span><span class="value">{{gpsDistance?gpsDistance+'m':'-'}}</span></div>
+          </div>
+        </div>
+        <div class="m-modal-footer">
+          <button class="btn" @click="arrivalOrder=null">取消</button>
+          <button class="btn btn-primary" :disabled="gpsCheckResult!=='success'" @click="confirmArrival">确认到场</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Repair Start Modal -->
+    <div class="m-modal-mask" v-if="repairOrder" @click.self="repairOrder=null">
+      <div class="m-modal">
+        <div class="m-modal-header">
+          <h3>扫码维修</h3>
+          <span style="font-size:22px;cursor:pointer;" @click="repairOrder=null">×</span>
+        </div>
+        <div class="m-modal-body">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div class="qr-placeholder">📱<br>维修二维码</div>
+            <div style="font-weight:600;font-size:16px;">{{repairOrder.title}}</div>
+            <div style="font-size:13px;color:var(--text-tri);">{{repairOrder.orderNo}}</div>
+          </div>
+          <div class="gps-status success">
+            <span class="icon">✅</span>
+            <div>
+              <div style="font-weight:500;">GPS 校验通过</div>
+              <div style="font-size:12px;margin-top:2px;">位置确认，可以开始维修</div>
+            </div>
+          </div>
+          <div class="m-form-group" style="margin-top:14px;">
+            <label>维修类型</label>
+            <select class="m-form-control" v-model="repairType">
+              <option value="repair">故障维修</option>
+              <option value="maintenance">维护保养</option>
+              <option value="inspection">巡检</option>
+            </select>
+          </div>
+          <div class="m-form-group">
+            <label>备注（可选）</label>
+            <textarea class="m-form-control" v-model="repairRemark" placeholder="输入维修备注"></textarea>
+          </div>
+        </div>
+        <div class="m-modal-footer">
+          <button class="btn" @click="repairOrder=null">取消</button>
+          <button class="btn btn-primary" @click="confirmRepair">开始维修</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="m-toast" v-if="toastMsg">{{toastMsg}}</div>
+
+  </div><!-- /mobile-app -->
+</div>
+
+<script>
+const {createApp,reactive,ref,computed,watch,onMounted,nextTick}=Vue;
+createApp({
+  setup(){
+    // Login
+    const loggedIn=ref(false);
+    const loginRole=ref('repairman');
+    const loginName=ref('');
+    const currentUser=ref({realName:'',role:''});
+    const roleOptions=[
+      {key:'repairman',label:'维修工',desc:'接单/作业'},
+      {key:'dispatcher',label:'调度员',desc:'派工/协调'},
+      {key:'confirmer',label:'确认人',desc:'确认工单'},
+      {key:'verifier',label:'验收人',desc:'质量验收'},
+      {key:'manager',label:'管理层',desc:'查看报表'},
+      {key:'admin',label:'管理员',desc:'系统配置'},
+    ];
+    const roleMap={repairman:'维修工',dispatcher:'调度员',confirmer:'确认人',verifier:'验收人',manager:'管理层',admin:'管理员'};
+    const roleLabel=computed(()=>roleMap[currentUser.value.role]||'');
+    const doLogin=()=>{
+      const names={repairman:'李维修',dispatcher:'张调度',confirmer:'赵确认',verifier:'王验收',manager:'王经理',admin:'管理员'};
+      currentUser.value={realName:names[loginRole.value]||'用户',role:loginRole.value};
+      loggedIn.value=true;
+      activeTab.value='home';
+      toast('登录成功');
+    };
+
+    // Navigation
+    const activeTab=ref('home');
+    const showBack=computed(()=>activeTab.value!=='home');
+    const showSearch=ref(false);
+    const pageTitle=computed(()=>({home:'工单系统',order:'工单列表',equipment:'设备台账',kb:'AI 知识库',profile:'个人中心'}[activeTab.value]||''));
+    const goBack=()=>{activeTab.value='home';showSearch.value=false;};
+
+    // Toast
+    const toastMsg=ref('');
+    let toastTimer=null;
+    const toast=(msg)=>{toastMsg.value=msg;if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastMsg.value='',2000);};
+
+    // Time Greeting
+    const timeGreeting=computed(()=>{const h=new Date().getHours();return h<6?'凌晨好':h<9?'早上好':h<12?'上午好':h<14?'中午好':h<18?'下午好':'晚上好';});
+
+    // Permissions
+    const canVerify=computed(()=>['verifier','dispatcher','admin'].includes(currentUser.value.role));
+
+    // Data
+    const stats=reactive({pendingConfirm:4,pendingDispatch:3,pendingAccept:5,pendingVerify:2});
+    const workshops=reactive([{id:1,name:'总装车间'},{id:2,name:'焊装车间'},{id:3,name:'涂装车间'},{id:4,name:'冲压车间'}]);
+    const orders=reactive([
+      {id:1,orderNo:'WO-20260918-0001',type:'emergency',equipment:'总装线 #3 减速机',title:'轴承异响需停机检修',workshop:'总装车间',assignee:'李维修',status:'working',plannedHours:3,actualHours:2.5,description:'减速机运行中发出明显异响，温度升高至78℃。',logs:[{time:'08:32',action:'创建工单',operator:'张提报'},{time:'08:36',action:'派工',operator:'张调度'},{time:'08:42',action:'抢单',operator:'李维修'}]},
+      {id:2,orderNo:'WO-20260918-0002',type:'periodic',equipment:'焊装机器人 #7',title:'月度PM保养-润滑系统检查',workshop:'焊装车间',assignee:'张师傅',status:'pending_accept',plannedHours:2,actualHours:0,description:'月度预防性维护：检查润滑系统油位、油质。',logs:[{time:'07:00',action:'周期触发',operator:'系统'}]},
+      {id:3,orderNo:'WO-20260918-0003',type:'temporary',equipment:'-',title:'围墙修缮-东区围栏破损',workshop:'总装车间',assignee:'',status:'pending_dispatch',plannedHours:4,actualHours:0,description:'东区围栏因车辆碰撞出现破损，需进行焊接修复。',logs:[{time:'09:15',action:'创建工单',operator:'张提报'},{time:'09:18',action:'确认通过',operator:'赵确认'}]},
+      {id:4,orderNo:'WO-20260918-0004',type:'emergency',equipment:'涂装烘干炉 #2',title:'温控异常温度波动超差',workshop:'涂装车间',assignee:'王技工',status:'pending_acceptance',plannedHours:2.5,actualHours:3,description:'温度控制系统异常，设定180℃实际波动±15℃。',logs:[{time:'22:10',action:'创建工单',operator:'张提报'},{time:'22:30',action:'扫码到场',operator:'王技工'},{time:'01:30',action:'提交验收',operator:'王技工'}]},
+      {id:5,orderNo:'WO-20260917-0005',type:'periodic',equipment:'冲压机 #1',title:'季度PM保养-滤芯更换',workshop:'冲压车间',assignee:'刘师傅',status:'closed',plannedHours:1.5,actualHours:1.2,description:'季度预防性维护：更换滤芯。',logs:[{time:'07:00',action:'周期触发',operator:'系统'},{time:'08:30',action:'验收通过',operator:'张调度'}]},
+      {id:6,orderNo:'WO-20260918-0006',type:'temporary',equipment:'-',title:'更换车间照明灯泡（10个）',workshop:'焊装车间',assignee:'',status:'pending_accept',plannedHours:1,actualHours:0,description:'焊装车间B区照明灯泡损坏10个。',logs:[{time:'10:05',action:'创建工单',operator:'陈员工'}]},
+      {id:7,orderNo:'WO-20260918-0007',type:'emergency',equipment:'总装线 #5 输送带',title:'输送带断裂产线停机',workshop:'总装车间',assignee:'',status:'pending_confirm',plannedHours:5,actualHours:0,description:'总装线#5输送带中部断裂，产线已停机。',logs:[{time:'10:22',action:'创建工单',operator:'张提报'}]},
+    ]);
+    const equipList=reactive([
+      {id:1,code:'EQ-001',name:'总装线 #3 减速机',model:'SEW R87',workshop:'总装车间',location:'A区3号线',status:'repairing',faultCount:8,fenceRadius:50,lng:'116.3974',lat:'39.9090'},
+      {id:2,code:'EQ-003',name:'总装线 #5 输送带',model:'Hytrol CRR-25',workshop:'总装车间',location:'A区5号线',status:'running',faultCount:3,fenceRadius:50,lng:'116.3980',lat:'39.9095'},
+      {id:3,code:'EQ-008',name:'冲压机 #1',model:'AIDA NC1-2500',workshop:'冲压车间',location:'C区1号',status:'running',faultCount:4,fenceRadius:80,lng:'116.3950',lat:'39.9070'},
+      {id:4,code:'EQ-015',name:'焊装机器人 #7',model:'FANUC R-2000iC',workshop:'焊装车间',location:'B区7号',status:'running',faultCount:6,fenceRadius:40,lng:'116.3945',lat:'39.9065'},
+      {id:5,code:'EQ-022',name:'涂装烘干炉 #2',model:'Durr EcoOven',workshop:'涂装车间',location:'D区2号',status:'repairing',faultCount:5,fenceRadius:60,lng:'116.3935',lat:'39.9055'},
+    ]);
+
+    // Filters
+    const statusFilter=ref('');
+    const statusFilters=[{key:'',label:'全部'},{key:'pending_confirm',label:'待确认'},{key:'pending_dispatch',label:'待派工'},{key:'pending_accept',label:'待接单'},{key:'working',label:'作业中'},{key:'pending_acceptance',label:'待验收'},{key:'closed',label:'已关闭'}];
+    const searchQuery=ref('');
+    const equipFilter=ref('');
+    const equipFilters=[{key:'',label:'全部'},{key:'running',label:'运行中'},{key:'repairing',label:'维修中'},{key:'idle',label:'空闲'}];
+    const equipQuery=ref('');
+
+    // Computed
+    const mobileFilteredOrders=computed(()=>{
+      let list=orders;
+      if(loginRole.value==='repairman')list=list.filter(o=>o.assignee===currentUser.value.realName||o.assignee==='');
+      if(statusFilter.value)list=list.filter(o=>o.status===statusFilter.value);
+      if(searchQuery.value){const q=searchQuery.value.toLowerCase();list=list.filter(o=>o.orderNo.toLowerCase().includes(q)||o.title.toLowerCase().includes(q));}
+      return list;
+    });
+    const mobileFilteredEquip=computed(()=>{
+      let list=equipList;
+      if(equipFilter.value)list=list.filter(e=>e.status===equipFilter.value);
+      if(equipQuery.value){const q=equipQuery.value.toLowerCase();list=list.filter(e=>e.name.toLowerCase().includes(q)||e.code.toLowerCase().includes(q));}
+      return list;
+    });
+    const urgentOrders=computed(()=>orders.filter(o=>o.type==='emergency'&&o.status!=='closed').slice(0,3));
+    const repairingEquips=computed(()=>equipList.filter(e=>e.status==='repairing'));
+    const todayPending=computed(()=>orders.filter(o=>['pending_confirm','pending_dispatch','pending_accept'].includes(o.status)).length);
+
+    // My Stats
+    const myStats=reactive({hours:186,orders:42,rate:98,level:3,firstFix:95,efficiency:1.12,grade:'A+',salary:17856});
+    const levelText=(l)=>({1:'初级',2:'中级',3:'高级',4:'专家'}[l]||'');
+
+    // Settings modals
+    const passwordModal=ref(false);
+    const notificationModal=ref(false);
+    const aboutModal=ref(false);
+    const passwordForm=reactive({old:'',new:'',confirm:''});
+    const passwordError=ref('');
+    const notificationSettings=reactive({push:true,sms:false,email:false,ringtone:true});
+
+    const openPasswordModal=()=>{passwordForm.value={old:'',new:'',confirm:''};passwordError.value='';passwordModal.value=true;};
+    const submitPassword=()=>{
+      if(!passwordForm.old||!passwordForm.new||!passwordForm.confirm){toast('请填写所有字段','warning');return;}
+      if(passwordForm.new.length<6){passwordError.value='新密码至少6位';return;}
+      if(passwordForm.new!==passwordForm.confirm){passwordError.value='两次输入的新密码不一致';return;}
+      if(passwordForm.old!=='123456'){passwordError.value='当前密码错误（演示环境固定为123456）';return;}
+      passwordModal.value=false;
+      toast('密码修改成功！','success');
+    };
+    const openNotificationModal=()=>{notificationModal.value=true;};
+    const saveNotificationSettings=()=>{
+      notificationModal.value=false;
+      toast('通知设置已保存','success');
+    };
+    const openAboutModal=()=>{aboutModal.value=true;};
+
+    // Dev Tag
+    const devTagOpen=ref(false);
+    const devTag=ref(null);
+    const devTagPage=ref('home');
+
+    const toggleDevTag=()=>{devTagOpen.value=!devTagOpen.value;};
+
+    const navigateToPage=(e)=>{
+      devTagPage.value=e.target.value;
+      activeTab.value=e.target.value;
+    };
+
+    // Helpers
+    const typeLabel=(t)=>({periodic:'周期性维护',temporary:'临时任务',emergency:'紧急故障'}[t]||t);
+    const typeColor=(t)=>({periodic:'tag-blue',temporary:'tag-orange',emergency:'tag-red'}[t]||'tag-gray');
+    const statusLabel=(s)=>({pending_confirm:'待确认',pending_dispatch:'待派工',pending_accept:'待接单',working:'作业中',pending_acceptance:'待验收',closed:'已关闭',rejected:'已驳回',postponed:'已延后',reworking:'返修中'}[s]||s);
+    const statusColor=(s)=>({pending_confirm:'tag-orange',pending_dispatch:'tag-purple',pending_accept:'tag-cyan',working:'tag-blue',pending_acceptance:'tag-orange',closed:'tag-green',rejected:'tag-red',postponed:'tag-gray',reworking:'tag-red'}[s]||'tag-gray');
+    const equipStatusLabel=(s)=>({running:'运行中',idle:'空闲',repairing:'维修中',scrapped:'已报废'}[s]||s);
+    const equipStatusColor=(s)=>({running:'tag-green',idle:'tag-gray',repairing:'tag-red',scrapped:'tag-gray'}[s]||'tag-gray');
+    const stepClass=(state)=>{const flow=['pending_confirm','pending_dispatch','pending_accept','working','pending_acceptance','closed'];const cur=flow.indexOf(detailOrder.value?.status);const idx=flow.indexOf(state);if(idx<=cur)return idx===cur?'active':'done';return '';};
+
+    // KB
+    const kbQuery=ref('');
+    const kbResults=reactive([]);
+    const searchKB=()=>{
+      if(!kbQuery.value){toast('请输入查询关键词');return;}
+      kbResults.splice(0);
+      const all=[
+        {category:'case',categoryLabel:'故障案例',title:'减速机轴承异响故障处理案例',score:96,highlight:'故障现象：轴承运行中发出明显异响，温度升高至78℃。<br>处理措施：停机检查发现轴承润滑脂干涸，更换轴承并重新加注高温润滑脂。',source:'历史维修记录',date:'2026-09-18'},
+        {category:'manual',categoryLabel:'维保手册',title:'SEW减速机维护手册 — 轴承章节',score:88,highlight:'维护周期：轴承润滑脂每6个月更换一次。<br>检查项：运行温度≤65℃，振动值≤2.8mm/s。',source:'《SEW减速机维护手册》v3.2',date:'2025-06-15'},
+        {category:'guide',categoryLabel:'作业指导',title:'轴承更换作业指导书',score:82,highlight:'步骤：1.停机断电→2.拆除联轴器→3.拆卸端盖→4.拉马拆卸→5.加热安装→6.加注润滑脂→7.测试。<br>标准工时：3小时。',source:'《设备维护作业指导书》',date:'2025-03-20'},
+      ];
+      all.forEach(r=>kbResults.push(r));
+    };
+
+    // Modals
+    const createOrder=ref(false);
+    const newOrder=reactive({type:'temporary',workshop:'',equipmentId:'',title:'',desc:''});
+    const detailOrder=ref(null);
+    const acceptanceOrder=ref(null),acceptResult=ref('pass'),acceptRemark=ref('');
+    const equipDetail=ref(null);
+    const fabAction=ref('');
+
+    // Scan & GPS
+    const scanMode=ref(false);
+    const scanTitle=ref('');
+    const scanCallback=ref(null);
+    const arrivalOrder=ref(null);
+    const repairOrder=ref(null);
+    const gpsCheckResult=ref('pending');
+    const gpsDistance=ref(null);
+    const repairType=ref('repair');
+    const repairRemark=ref('');
+
+    // GPS Distance Calculation (Haversine formula)
+    const calcDistance=(lat1,lng1,lat2,lng2)=>{
+      const R=6371000;
+      const dLat=(lat2-lat1)*Math.PI/180;
+      const dLng=(lng2-lng1)*Math.PI/180;
+      const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+      return Math.round(2*R*Math.asin(Math.sqrt(a)));
+    };
+
+    const startScan=(title,callback)=>{
+      scanTitle.value=title;
+      scanCallback.value=callback;
+      scanMode.value=true;
+    };
+
+    const closeScan=()=>{
+      scanMode.value=false;
+      gpsCheckResult.value='pending';
+      gpsDistance.value=null;
+    };
+
+    const simulateScan=()=>{
+      const device=equipList.find(e=>e.code===scanCallback.value?.code)||equipList[0];
+      const mLat=parseFloat(device.lat)+(Math.random()-.5)*0.001;
+      const mLng=parseFloat(device.lng)+(Math.random()-.5)*0.001;
+      const dist=calcDistance(mLat,mLng,parseFloat(device.lat),parseFloat(device.lng));
+      const radius=device.fenceRadius;
+      gpsDistance.value=dist;
+      if(dist<=radius){
+        gpsCheckResult.value='success';
+        setTimeout(()=>{
+          scanMode.value=false;
+          if(scanCallback.value)scanCallback.value(device,{gpsOk:true,distance:dist});
+        },800);
+      }else{
+        gpsCheckResult.value='error';
+        setTimeout(()=>{gpsCheckResult.value='pending';},2000);
+      }
+    };
+
+    const startScanForEquip=(equip)=>{
+      equipDetail.value=null;
+      startScan('扫码建单',(device,result)=>{
+        if(result.gpsOk){
+          openCreate();
+          newOrder.workshop=device.workshop;
+          newOrder.equipmentId=device.id;
+          newOrder.title=device.name+' - 现场故障';
+          toast('扫码成功，定位范围内 ✓');
+        }else{
+          toast('GPS 校验失败，超出围栏范围');
+        }
+      });
+    };
+
+    const openArrivalConfirm=(order)=>{
+      arrivalOrder.value=order;
+      gpsCheckResult.value='pending';
+      gpsDistance.value=null;
+      setTimeout(()=>{
+        const device=equipList.find(e=>e.name===order.equipment)||equipList[0];
+        const mLat=parseFloat(device.lat)+(Math.random()-.5)*0.0005;
+        const mLng=parseFloat(device.lng)+(Math.random()-.5)*0.0005;
+        const dist=calcDistance(mLat,mLng,parseFloat(device.lat),parseFloat(device.lng));
+        const radius=order.fenceRadius||device.fenceRadius||50;
+        gpsDistance.value=dist;
+        gpsCheckResult.value=dist<=radius?'success':'error';
+      },1200);
+    };
+
+    const confirmArrival=()=>{
+      const o=orders.find(x=>x.id===arrivalOrder.value.id);
+      if(o){
+        o.arriveTime=new Date().toLocaleString('zh-CN',{hour12:false}).slice(0,16);
+        o.logs.push({time:'刚刚',action:'扫码到场',operator:currentUser.value.realName,remark:`GPS校验通过，距离${gpsDistance.value}m`});
+        toast('到达确认成功！');
+      }
+      arrivalOrder.value=null;
+    };
+
+    const openRepairScan=(order)=>{
+      repairOrder.value=order;
+    };
+
+    const confirmRepair=()=>{
+      const o=orders.find(x=>x.id===repairOrder.value.id);
+      if(o){
+        o.status='working';
+        o.logs.push({time:'刚刚',action:'开始维修',operator:currentUser.value.realName,remark:repairRemark.value||repairType.value});
+        toast('维修已开始！');
+      }
+      repairOrder.value=null;
+      repairRemark.value='';
+    };
+
+    const equipByWs=(ws)=>{if(!ws)return[];return equipList.filter(e=>e.workshop===ws);};
+    const openCreate=()=>{Object.assign(newOrder,{type:'temporary',workshop:'总装车间',equipmentId:'',title:'',desc:''});createOrder.value=true;};
+    const submitCreate=()=>{if(!newOrder.title||!newOrder.desc){toast('请填写标题和描述');return;}const no='WO-20260918-'+String(orders.length+1).padStart(4,'0');orders.unshift({id:Date.now(),orderNo:no,type:newOrder.type,equipment:'-',title:newOrder.title,workshop:newOrder.workshop,assignee:'',status:'pending_confirm',plannedHours:0,actualHours:0,description:newOrder.desc,logs:[{time:'刚刚',action:'创建工单',operator:currentUser.value.realName}]});createOrder.value=false;toast('工单创建成功');};
+    const openDetail=(o)=>{detailOrder.value=o;};
+    const grabOrder=(o)=>{const t=orders.find(x=>x.id===o.id);if(t){t.status='working';t.assignee=currentUser.value.realName;t.logs.push({time:'刚刚',action:'抢单',operator:currentUser.value.realName});}toast('接单成功！');};
+    const submitWork=(o)=>{const t=orders.find(x=>x.id===o.id);if(t){t.status='pending_acceptance';t.actualHours=Math.round((Number(t.plannedHours)*0.8+Math.random()*Number(t.plannedHours)*0.4)*10)/10;t.logs.push({time:'刚刚',action:'提交验收',operator:currentUser.value.realName});}toast('已提交验收');};
+    const openAcceptance=(o)=>{acceptanceOrder.value=o;acceptResult.value='pass';acceptRemark.value='';};
+    const submitAcceptance=()=>{const o=orders.find(x=>x.id===acceptanceOrder.value.id);if(o){if(acceptResult.value==='pass'){o.status='closed';o.logs.push({time:'刚刚',action:'验收通过',operator:currentUser.value.realName});toast('验收通过，工单已闭环');}else{o.status='reworking';o.logs.push({time:'刚刚',action:'验收不通过',operator:currentUser.value.realName});toast('验收不通过，已回退');}}acceptanceOrder.value=null;};
+    const showEquipDetail=(e)=>{equipDetail.value=e;};
+
+    return {
+      loggedIn,loginRole,loginName,currentUser,roleOptions,roleLabel,doLogin,
+      activeTab,showBack,showSearch,pageTitle,goBack,
+      toastMsg,toast,
+      timeGreeting,
+      canVerify,
+      stats,workshops,orders,equipList,
+      statusFilter,statusFilters,searchQuery,equipFilter,equipFilters,equipQuery,
+      mobileFilteredOrders,mobileFilteredEquip,urgentOrders,repairingEquips,todayPending,
+      myStats,levelText,
+      typeLabel,typeColor,statusLabel,statusColor,equipStatusLabel,equipStatusColor,stepClass,
+      kbQuery,kbResults,searchKB,
+      createOrder,newOrder,detailOrder,acceptanceOrder,acceptResult,acceptRemark,equipDetail,fabAction,
+      scanMode,scanTitle,scanCallback,arrivalOrder,repairOrder,gpsCheckResult,gpsDistance,repairType,repairRemark,
+      calcDistance,startScan,closeScan,simulateScan,startScanForEquip,openArrivalConfirm,confirmArrival,openRepairScan,confirmRepair,
+      equipByWs,openCreate,submitCreate,openDetail,grabOrder,submitWork,openAcceptance,submitAcceptance,showEquipDetail,
+      passwordModal,notificationModal,aboutModal,passwordForm,passwordError,notificationSettings,
+      openPasswordModal,submitPassword,openNotificationModal,saveNotificationSettings,openAboutModal,
+      devTagOpen,devTag,devTagPage,toggleDevTag,navigateToPage,
+    };
+  },
+}).mount('#app');
+</script>
+  <!-- Dev Tag -->
+  <div class="dev-tag" :class="{open: devTagOpen}" ref="devTag">
+    <div class="dev-tag-toggle" @click="toggleDevTag">📋</div>
+    <div class="dev-tag-panel" v-show="devTagOpen">
+      <div style="margin-bottom:12px;">
+        <select class="m-form-control" v-model="devTagPage" @change="navigateToPage" style="height:32px;font-size:12px;">
+          <option value="home">首页</option>
+          <option value="order">工单列表</option>
+          <option value="equipment">设备列表</option>
+          <option value="kb">知识库</option>
+          <option value="profile">个人中心</option>
+          <option value="login">登录页</option>
+        </select>
+      </div>
+      <div v-show="devTagPage==='home'">
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📄 当前页面</div><div class="dev-tag-section-content">首页</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🧩 页面元素</div><div class="dev-tag-section-content"><span class="tag">用户信息卡片</span> <span class="tag">统计卡片×4</span> <span class="tag">快捷操作×4</span> <span class="tag">扫码建单卡片</span> <span class="tag">到达确认卡片</span> <span class="tag">紧急工单列表</span> <span class="tag">维修中设备列表</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🖱 交互说明</div><div class="dev-tag-section-content"><span class="tag tag-event">点击统计卡片→跳转工单列表</span> <span class="tag tag-event">点击快捷操作→打开对应功能</span> <span class="tag tag-event">点击扫码建单→打开扫码页面</span> <span class="tag tag-event">点击到达确认→打开GPS确认</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">⚙️ 功能说明</div><div class="dev-tag-section-content">展示用户信息、待处理统计、快捷操作入口、紧急工单和维修中设备</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📋 字段信息</div><div class="dev-tag-section-content"><span class="tag tag-field">realName</span> <span class="tag tag-field">role</span> <span class="tag tag-field">hours</span> <span class="tag tag-field">orders</span> <span class="tag tag-field">rate</span> <span class="tag tag-field">pendingConfirm</span> <span class="tag tag-field">pendingDispatch</span> <span class="tag tag-field">pendingAccept</span> <span class="tag tag-field">pendingVerify</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🔗 关联功能</div><div class="dev-tag-section-content"><span class="tag tag-action">工单列表</span> <span class="tag tag-action">扫码建单</span> <span class="tag tag-action">到达确认</span> <span class="tag tag-action">AI查询</span> <span class="tag tag-action">个人中心</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📝 功能逻辑</div><div class="dev-tag-section-content">根据登录角色显示不同数据；维修工仅显示本人相关工单；统计卡片点击跳转对应状态筛选的工单列表</div></div>
+      </div>
+      <div v-show="devTagPage==='order'">
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📄 当前页面</div><div class="dev-tag-section-content">工单列表</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🧩 页面元素</div><div class="dev-tag-section-content"><span class="tag">搜索栏</span> <span class="tag">状态筛选标签</span> <span class="tag">工单卡片列表</span> <span class="tag">FAB新建按钮</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🖱 交互说明</div><div class="dev-tag-section-content"><span class="tag tag-event">点击搜索→展开搜索栏</span> <span class="tag tag-event">点击状态标签→筛选工单</span> <span class="tag tag-event">点击工单卡片→打开详情</span> <span class="tag tag-event">点击抢单→抢单成功</span> <span class="tag tag-event">点击FAB→打开新建工单</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">⚙️ 功能说明</div><div class="dev-tag-section-content">展示工单列表，支持搜索筛选、状态筛选、抢单、新建工单</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📋 字段信息</div><div class="dev-tag-section-content"><span class="tag tag-field">orderNo</span> <span class="tag tag-field">type</span> <span class="tag tag-field">status</span> <span class="tag tag-field">workshop</span> <span class="tag tag-field">assignee</span> <span class="tag tag-field">title</span> <span class="tag tag-field">equipment</span> <span class="tag tag-field">createdAt</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🔗 关联功能</div><div class="dev-tag-section-content"><span class="tag tag-action">工单详情</span> <span class="tag tag-action">新建工单</span> <span class="tag tag-action">抢单</span> <span class="tag tag-action">提交验收</span> <span class="tag tag-action">到达确认</span> <span class="tag tag-action">扫码维修</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📝 功能逻辑</div><div class="dev-tag-section-content">维修工角色仅显示本人相关工单；抢单按钮仅待接单状态显示；提交验收仅作业中状态且当前用户为执行人时显示</div></div>
+      </div>
+      <div v-if="devTagPage==='equipment'">
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📄 当前页面</div><div class="dev-tag-section-content">设备列表</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🧩 页面元素</div><div class="dev-tag-section-content"><span class="tag">搜索栏</span> <span class="tag">状态筛选标签</span> <span class="tag">设备卡片列表</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🖱 交互说明</div><div class="dev-tag-section-content"><span class="tag tag-event">点击搜索→搜索设备</span> <span class="tag tag-event">点击状态标签→筛选设备</span> <span class="tag tag-event">点击设备卡片→打开详情</span> <span class="tag tag-event">点击扫码→模拟扫码</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">⚙️ 功能说明</div><div class="dev-tag-section-content">展示设备列表，支持搜索筛选、查看详情、模拟扫码</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📋 字段信息</div><div class="dev-tag-section-content"><span class="tag tag-field">code</span> <span class="tag tag-field">name</span> <span class="tag tag-field">model</span> <span class="tag tag-field">workshop</span> <span class="tag tag-field">location</span> <span class="tag tag-field">status</span> <span class="tag tag-field">faultCount</span> <span class="tag tag-field">fenceRadius</span> <span class="tag tag-field">lng</span> <span class="tag tag-field">lat</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🔗 关联功能</div><div class="dev-tag-section-content"><span class="tag tag-action">设备详情</span> <span class="tag tag-action">扫码建单</span> <span class="tag tag-action">到达确认</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📝 功能逻辑</div><div class="dev-tag-section-content">设备详情展示GPS围栏信息；扫码功能模拟GPS校验；状态筛选支持运行中/维修中/空闲</div></div>
+      </div>
+      <div v-if="devTagPage==='kb'">
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📄 当前页面</div><div class="dev-tag-section-content">知识库</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🧩 页面元素</div><div class="dev-tag-section-content"><span class="tag">搜索栏</span> <span class="tag">AI查询按钮</span> <span class="tag">知识条目列表</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🖱 交互说明</div><div class="dev-tag-section-content"><span class="tag tag-event">输入关键词→点击AI查询→显示结果</span> <span class="tag tag-event">点击知识条目→查看详情</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">⚙️ 功能说明</div><div class="dev-tag-section-content">AI知识库查询，支持自然语言输入，返回相似度排序的知识条目</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📋 字段信息</div><div class="dev-tag-section-content"><span class="tag tag-field">query</span> <span class="tag tag-field">category</span> <span class="tag tag-field">score</span> <span class="tag tag-field">title</span> <span class="tag tag-field">highlight</span> <span class="tag tag-field">source</span> <span class="tag tag-field">date</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🔗 关联功能</div><div class="dev-tag-section-content"><span class="tag tag-action">首页</span> <span class="tag tag-action">工单详情</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📝 功能逻辑</div><div class="dev-tag-section-content">输入故障现象→AI返回相关知识（维保手册/故障案例/作业指导）；按相似度排序；显示分类标签和来源</div></div>
+      </div>
+      <div v-if="devTagPage==='profile'">
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📄 当前页面</div><div class="dev-tag-section-content">个人中心</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🧩 页面元素</div><div class="dev-tag-section-content"><span class="tag">用户信息卡片</span> <span class="tag">绩效详情卡片</span> <span class="tag">设置列表</span> <span class="tag">修改密码弹窗</span> <span class="tag">通知设置弹窗</span> <span class="tag">关于系统弹窗</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🖱 交互说明</div><div class="dev-tag-section-content"><span class="tag tag-event">点击修改密码→打开弹窗</span> <span class="tag tag-event">点击通知设置→打开弹窗</span> <span class="tag tag-event">点击关于系统→打开弹窗</span> <span class="tag tag-event">点击退出登录→返回登录页</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">⚙️ 功能说明</div><div class="dev-tag-section-content">展示用户信息、绩效数据、系统设置，支持修改密码、通知设置、查看关于信息</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📋 字段信息</div><div class="dev-tag-section-content"><span class="tag tag-field">realName</span> <span class="tag tag-field">role</span> <span class="tag tag-field">hours</span> <span class="tag tag-field">orders</span> <span class="tag tag-field">rate</span> <span class="tag tag-field">level</span> <span class="tag tag-field">firstFix</span> <span class="tag tag-field">efficiency</span> <span class="tag tag-field">grade</span> <span class="tag tag-field">salary</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🔗 关联功能</div><div class="dev-tag-section-content"><span class="tag tag-action">首页</span> <span class="tag tag-action">工单列表</span> <span class="tag tag-action">设备列表</span> <span class="tag tag-action">知识库</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📝 功能逻辑</div><div class="dev-tag-section-content">绩效数据根据当前用户计算；修改密码需验证旧密码（演示固定123456）；通知设置支持4个开关；关于系统显示版本信息</div></div>
+      </div>
+      <div v-if="devTagPage==='login'">
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📄 当前页面</div><div class="dev-tag-section-content">登录页</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🧩 页面元素</div><div class="dev-tag-section-content"><span class="tag">Logo</span> <span class="tag">角色选择卡片×6</span> <span class="tag">用户名输入框</span> <span class="tag">密码输入框</span> <span class="tag">登录按钮</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🖱 交互说明</div><div class="dev-tag-section-content"><span class="tag tag-event">选择角色→高亮显示</span> <span class="tag tag-event">输入用户名</span> <span class="tag tag-event">点击登录→进入主界面</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">⚙️ 功能说明</div><div class="dev-tag-section-content">用户登录页面，选择角色后输入用户名登录</div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📋 字段信息</div><div class="dev-tag-section-content"><span class="tag tag-field">loginRole</span> <span class="tag tag-field">loginName</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">🔗 关联功能</div><div class="dev-tag-section-content"><span class="tag tag-action">首页</span></div></div>
+        <div class="dev-tag-section"><div class="dev-tag-section-title">📝 功能逻辑</div><div class="dev-tag-section-content">角色选择决定后续权限；用户名任意输入；密码固定123456（演示环境）</div></div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
